@@ -3,20 +3,26 @@ import numpy as np
 import os
 import csv
 
-
+def count_zero(image):
+	count = 0
+	for i in range(image.shape[0]):
+		for j in range(image.shape[1]):
+			if image[i,j] == 0:
+				count = count + 1
+	return count
 
 def remove_OD(image):
 	image_x = image.copy()
 	OP1 = cv2.morphologyEx(image_x, cv2.MORPH_CLOSE, 
 		cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(9,9)), iterations = 1)
-	ret3,otsu_result = cv2.threshold(OP1,(np.amax(OP1)+np.mean(OP1))/2 + 20,255,cv2.THRESH_BINARY_INV)
+	ret3,otsu_result = cv2.threshold(OP1,(np.amax(OP1)+np.mean(OP1))/2+20 + 20,255,cv2.THRESH_BINARY_INV)
+	dst = image_x.copy()
+	cv2.bitwise_and(otsu_result,image_x,dst)
+	newfin = cv2.dilate(dst, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(9,9)), iterations=4)
+
+
 	print(ret3)
-
-
-
-
-
-	return otsu_result
+	return newfin
 
 
 

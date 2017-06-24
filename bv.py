@@ -3,6 +3,23 @@ import numpy as np
 import os
 import csv
 
+
+def line_of_symmetry(image):
+	image_v = image.copy()
+	line = 0
+	prev_diff = image_v.size
+	for i in range(20,image_v.shape[0]-20):
+		x1, y1 = image_v[0:i,:].nonzero()
+		x2, y2 = image_v[i+1:image_v.shape[0],:].nonzero()
+		diff = abs(x1.shape[0] - x2.shape[0])
+		if diff < prev_diff:
+			prev_diff = diff
+			line = i
+		i = i + 35
+	print(line)
+	image[line-10:line+10,:] = 255
+	return image
+
 def maskWhiteCounter (mask_input):
     counter = 0
     for r in range(mask_input.shape[0]):
@@ -10,8 +27,6 @@ def maskWhiteCounter (mask_input):
             if mask_input.item(r, c) == 255:
                 counter+=1
     return counter
-
-
 
 
 def extract_bv(image):
@@ -60,7 +75,7 @@ def extract_bv(image):
 	
 	finimage = cv2.bitwise_and(fundus_eroded,fundus_eroded,mask=xmask)	
 	blood_vessels = cv2.bitwise_not(finimage)	
-	return blood_vessels
+	return finimage
 
 	
 
@@ -77,5 +92,6 @@ if __name__ == "__main__":
 		file_name_no_extension = os.path.splitext(file_name)[0]
 		fundus = cv2.imread(pathFolder+'/'+file_name)
 		bv_image = extract_bv(fundus)
-		cv2.imwrite(destinationFolder+file_name_no_extension+"_bloodvessel.jpg",bv_image)
+		x = line_of_symmetry(bv_image)
+		cv2.imwrite(destinationFolder+file_name_no_extension+"_bloodvessel.jpg",x)
     
