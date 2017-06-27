@@ -3,6 +3,22 @@ import numpy as np
 import os
 import csv
 
+def identify_OD(image):
+	newfin = cv2.dilate(fin, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(5,5)), iterations=2)
+	mask = np.ones(newfin.shape[:2], dtype="uint8") * 255	
+	prev_contour = -1
+	y1, ycontours, yhierarchy = cv2.findContours(newfin.copy(),cv2.RETR_LIST,cv2.CHAIN_APPROX_SIMPLE)	
+	for cnt in ycontours:		
+		if cv2.contourArea(cnt) <= prev_contour:
+			prev_contour = cnt
+	M = cv2.moments(cnt)
+	print(M)
+	cx = int(M['m10']/M['m00'])
+	cy = int(M['m01']/M['m00'])	
+	cv2.circle(image,(cx, cy), 20, (0,255,0), 5)
+	return image
+
+
 
 def line_of_symmetry(image):
 	image_v = image.copy()
@@ -16,9 +32,8 @@ def line_of_symmetry(image):
 			prev_diff = diff
 			line = i
 		i = i + 35
-	print(line)
-	image[line-10:line+10,:] = 255
-	return image
+	print(line)	
+	return line
 
 def maskWhiteCounter (mask_input):
     counter = 0
@@ -58,7 +73,7 @@ def extract_bv(image):
 	newfin = cv2.erode(fin, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3)), iterations=1)	
 
 	# removing blobs of microaneurysm & unwanted bigger chunks taking in consideration they are not straight lines like blood
-	#vessels and also in an interval of area
+	# vessels and also in an interval of area
 	fundus_eroded = cv2.bitwise_not(newfin)	
 	xmask = np.ones(fundus.shape[:2], dtype="uint8") * 255
 	x1, xcontours, xhierarchy = cv2.findContours(fundus_eroded.copy(),cv2.RETR_LIST,cv2.CHAIN_APPROX_SIMPLE)	
@@ -82,16 +97,24 @@ def extract_bv(image):
 
 
 if __name__ == "__main__":
-	pathFolder = "/home/sherlock/Internship@iit/exudate-detection/diaretdb1/"
+	pathFolder = "/home/sherlock/Internship@iit/exudate-detection/Base11/"
 	filesArray = [x for x in os.listdir(pathFolder) if os.path.isfile(os.path.join(pathFolder,x))]
-	destinationFolder = "/home/sherlock/Internship@iit/exudate-detection/diaretdb1-bloodvessel/"
+	destinationFolder = "/home/sherlock/Internship@iit/exudate-detection/Base11-bloodvessel/"
 	if not os.path.exists(destinationFolder):
 		os.mkdir(destinationFolder)
 	for file_name in filesArray:
 		print(pathFolder+'/'+file_name)
 		file_name_no_extension = os.path.splitext(file_name)[0]
 		fundus = cv2.imread(pathFolder+'/'+file_name)
+		new_fundus = fundus.copy()
 		bv_image = extract_bv(fundus)
-		x = line_of_symmetry(bv_image)
-		cv2.imwrite(destinationFolder+file_name_no_extension+"_bloodvessel.jpg",x)
-    
+		line = line_of_symmetry(bv_image)	
+		b,green_fundus,r = cv2.split(fundus)
+		sub_image = green_fundus[line-120:line+120,:]
+		ret,fin = cv2.threshold(sub_image,(np.mean(sub_image) + np.amax(sub_image))/2,255,cv2.THRESH_BINARY)					
+		new_fin = identify_OD(fin)		
+		green_fundus[line-120:line+120,:] = new_fin
+		cv2.imshow("ghg",green_fundus)
+		#cv2.imwrite(destinationFolder+file_name_no_extension+"_bloodvessel.jpg",new_fin)
+		break
+	cv2.waitKey()
