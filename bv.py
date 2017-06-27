@@ -3,20 +3,24 @@ import numpy as np
 import os
 import csv
 
-def identify_OD(image):
-	newfin = cv2.dilate(fin, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(5,5)), iterations=2)
+def identify_OD(image,green_channel,add_index):
+	print(green_channel.shape,"gc")
+	newfin = cv2.dilate(image, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(5,5)), iterations=2)
 	mask = np.ones(newfin.shape[:2], dtype="uint8") * 255	
 	prev_contour = -1
 	y1, ycontours, yhierarchy = cv2.findContours(newfin.copy(),cv2.RETR_LIST,cv2.CHAIN_APPROX_SIMPLE)	
 	for cnt in ycontours:		
 		if cv2.contourArea(cnt) <= prev_contour:
-			prev_contour = cnt
+			prev_contour = cnt	
 	M = cv2.moments(cnt)
-	print(M)
 	cx = int(M['m10']/M['m00'])
-	cy = int(M['m01']/M['m00'])	
-	cv2.circle(image,(cx, cy), 20, (0,255,0), 5)
-	return image
+	cy = int(M['m01']/M['m00'])
+	print(cx,cy)
+	print(cx+add_index,cy)
+	print(green_channel.shape,"qweert")
+	cv2.circle(image,(cx,cy), 20, (0,255,0), -5)
+	cv2.circle(green_channel,(int(cx),cy+add_index), 80, (0,255,0), -10)
+	return green_channel
 
 
 
@@ -32,7 +36,6 @@ def line_of_symmetry(image):
 			prev_diff = diff
 			line = i
 		i = i + 35
-	print(line)	
 	return line
 
 def maskWhiteCounter (mask_input):
@@ -111,10 +114,6 @@ if __name__ == "__main__":
 		line = line_of_symmetry(bv_image)	
 		b,green_fundus,r = cv2.split(fundus)
 		sub_image = green_fundus[line-120:line+120,:]
-		ret,fin = cv2.threshold(sub_image,(np.mean(sub_image) + np.amax(sub_image))/2,255,cv2.THRESH_BINARY)					
-		new_fin = identify_OD(fin)		
-		green_fundus[line-120:line+120,:] = new_fin
-		cv2.imshow("ghg",green_fundus)
-		#cv2.imwrite(destinationFolder+file_name_no_extension+"_bloodvessel.jpg",new_fin)
-		break
-	cv2.waitKey()
+		ret,fin = cv2.threshold(sub_image,(np.mean(sub_image) + np.amax(sub_image))/2,255,cv2.THRESH_BINARY)							
+		new_fin = identify_OD(fin,green_fundus,line-120)					
+		cv2.imwrite(destinationFolder+file_name_no_extension+"_bloodvessel.jpg",new_fin)			
