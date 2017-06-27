@@ -3,23 +3,26 @@ import numpy as np
 import os
 import csv
 
-def identify_OD(image,green_channel,add_index):
-	print(green_channel.shape,"gc")
+def identify_OD(image,green_channel,add_index):	
 	newfin = cv2.dilate(image, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(5,5)), iterations=2)
-	mask = np.ones(newfin.shape[:2], dtype="uint8") * 255	
-	prev_contour = -1
-	y1, ycontours, yhierarchy = cv2.findContours(newfin.copy(),cv2.RETR_LIST,cv2.CHAIN_APPROX_SIMPLE)	
-	for cnt in ycontours:		
-		if cv2.contourArea(cnt) <= prev_contour:
+	mask = np.ones(newfin.shape[:2], dtype="uint8") * 255		
+	y1, ycontours, yhierarchy = cv2.findContours(newfin.copy(),cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)	
+	prev_contour = ycontours[0]
+	for cnt in ycontours:				
+		if cv2.contourArea(cnt) >= cv2.contourArea(prev_contour):
+			print("dfdf")
 			prev_contour = cnt	
-	M = cv2.moments(cnt)
+			cv2.drawContours(mask, [cnt], -1, 0, -1)			
+	M = cv2.moments(prev_contour)
 	cx = int(M['m10']/M['m00'])
 	cy = int(M['m01']/M['m00'])
 	print(cx,cy)
-	print(cx+add_index,cy)
+	print(cx+add_index,cy)	
 	print(green_channel.shape,"qweert")
 	cv2.circle(image,(cx,cy), 20, (0,255,0), -5)
 	cv2.circle(green_channel,(int(cx),cy+add_index), 80, (0,255,0), -10)
+	#cv2.imshow("bd",green_channel)
+
 	return green_channel
 
 
@@ -109,11 +112,14 @@ if __name__ == "__main__":
 		print(pathFolder+'/'+file_name)
 		file_name_no_extension = os.path.splitext(file_name)[0]
 		fundus = cv2.imread(pathFolder+'/'+file_name)
+		#fundus = cv2.imread("sss.tif")
 		new_fundus = fundus.copy()
 		bv_image = extract_bv(fundus)
 		line = line_of_symmetry(bv_image)	
 		b,green_fundus,r = cv2.split(fundus)
 		sub_image = green_fundus[line-120:line+120,:]
 		ret,fin = cv2.threshold(sub_image,(np.mean(sub_image) + np.amax(sub_image))/2,255,cv2.THRESH_BINARY)							
-		new_fin = identify_OD(fin,green_fundus,line-120)					
+		new_fin = identify_OD(fin,green_fundus,line-120)
+		#break							
+	#cv2.waitKey()
 		cv2.imwrite(destinationFolder+file_name_no_extension+"_bloodvessel.jpg",new_fin)			
