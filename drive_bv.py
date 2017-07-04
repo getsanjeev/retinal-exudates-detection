@@ -7,8 +7,18 @@ def exudates_detection(image):
 	ret,exudate_candidate = cv2.threshold(image,(np.mean(image) + np.amax(image))/2 ,255,cv2.THRESH_BINARY_INV)	
 	return exudate_candidate
 
+def color_exudate_detction(green_fundus,red_fundus):
+	ret,g_channel = cv2.threshold(green_fundus,(np.amax(green_fundus)+np.mean(green_fundus))/2,255,cv2.THRESH_BINARY)
+	ret,r_channel = cv2.threshold(red_fundus,(np.amax(red_fundus)+np.mean(red_fundus))/2,255,cv2.THRESH_BINARY)	
+	if(g_channel == r_channel).nonzero():
+		image_x = g_channel
+	else:
+		image_x = 0
+	return image_x
 
-def identify_OD(image,green_channel,add_index):	
+
+
+def identify_OD(image,green_channel,add_index):
 	newfin = cv2.dilate(image, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(5,5)), iterations=2)
 	mask = np.ones(newfin.shape[:2], dtype="uint8") * 255		
 	y1, ycontours, yhierarchy = cv2.findContours(newfin.copy(),cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)	
@@ -52,13 +62,9 @@ def maskWhiteCounter (mask_input):
     return counter
 
 
-def extract_bv(image):
-	dim = (800,615)
-	fundus = cv2.resize(image, dim, interpolation = cv2.INTER_AREA)	
-	b,green_fundus,r = cv2.split(fundus)
+def extract_bv(image):			
 	clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
-	contrast_enhanced_green_fundus = clahe.apply(green_fundus)
-
+	contrast_enhanced_green_fundus = clahe.apply(image)
 	# applying alternate sequential filtering (3 times closing opening)
 	r1 = cv2.morphologyEx(contrast_enhanced_green_fundus, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(5,5)), iterations = 1)
 	R1 = cv2.morphologyEx(r1, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(5,5)), iterations = 1)
@@ -83,7 +89,7 @@ def extract_bv(image):
 	# removing blobs of microaneurysm & unwanted bigger chunks taking in consideration they are not straight lines like blood
 	# vessels and also in an interval of area
 	fundus_eroded = cv2.bitwise_not(newfin)	
-	xmask = np.ones(fundus.shape[:2], dtype="uint8") * 255
+	xmask = np.ones(image.shape[:2], dtype="uint8") * 255
 	x1, xcontours, xhierarchy = cv2.findContours(fundus_eroded.copy(),cv2.RETR_LIST,cv2.CHAIN_APPROX_SIMPLE)	
 	for cnt in xcontours:
 		shape = "unidentified"
@@ -107,22 +113,34 @@ def extract_bv(image):
 if __name__ == "__main__":
 	pathFolder = "/home/sherlock/Internship@iit/exudate-detection/Base11/"
 	filesArray = [x for x in os.listdir(pathFolder) if os.path.isfile(os.path.join(pathFolder,x))]
-	destinationFolder = "/home/sherlock/Internship@iit/exudate-detection/Base11-bloodvessel/"
-	if not os.path.exists(destinationFolder):
-		os.mkdir(destinationFolder)
+	bvDestinationFolder = "/home/sherlock/Internship@iit/exudate-detection/Base11-bloodvessel/"
+	exDestinationFolder = "/home/sherlock/Internship@iit/exudate-detection/Base11-exudate/"
+	colDestinationFolder = "/home/sherlock/Internship@iit/exudate-detection/Base11-color/"
+	if not os.path.exists(bvDestinationFolder):
+		os.mkdir(bvDestinationFolder)
+	if not os.path.exists(exDestinationFolder):
+		os.mkdir(exDestinationFolder)
+	if not os.path.exists(colDestinationFolder):
+		os.mkdir(colDestinationFolder)
+
 	for file_name in filesArray:
 		print(pathFolder+'/'+file_name)
 		file_name_no_extension = os.path.splitext(file_name)[0]
 		fundus = cv2.imread(pathFolder+'/'+file_name)
+		dim = (800,615)
+		fundus1 = cv2.resize(fundus, dim, interpolation = cv2.INTER_AREA)	
+		b,green_fundus,r = cv2.split(fundus1)
+		image_bin = color_exudate_detction(green_fundus,r)
+		cv2.imwrite(colDestinationFolder+file_name_no_extension+"_color.jpg",image_bin)	
 		#fundus = cv2.imread("sss.tif")
-		new_fundus = fundus.copy()
-		bv_image = extract_bv(fundus)
+		new_fundus = green_fundus.copy()
+		bv_image = extract_bv(new_fundus)
+		cv2.imwrite(bvDestinationFolder+file_name_no_extension+"_bloodvessel.jpg",bv_image)			
 		line = line_of_symmetry(bv_image)	
-		b,green_fundus,r = cv2.split(fundus)
 		sub_image = green_fundus[line-120:line+120,:]
 		ret,fin = cv2.threshold(sub_image,(np.mean(sub_image) + np.amax(sub_image))/2,255,cv2.THRESH_BINARY)							
 		new_fin = identify_OD(fin,green_fundus,line-120)
 		exu_cand = exudates_detection(new_fin)
 		#break							
 	#cv2.waitKey()
-		cv2.imwrite(destinationFolder+file_name_no_extension+"_bloodvessel.jpg",exu_cand)			
+		cv2.imwrite(exDestinationFolder+file_name_no_extension+"_exudates.jpg",exu_cand)	
