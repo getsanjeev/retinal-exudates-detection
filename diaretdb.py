@@ -111,11 +111,11 @@ def extract_bv(image):
 
 
 if __name__ == "__main__":
-	pathFolder = "/home/sherlock/Internship@iit/exudate-detection/Base11/"
+	pathFolder = "/home/sherlock/Internship@iit/exudate-detection/diaretdb1/"
 	filesArray = [x for x in os.listdir(pathFolder) if os.path.isfile(os.path.join(pathFolder,x))]
-	bvDestinationFolder = "/home/sherlock/Internship@iit/exudate-detection/Base11-bloodvessel/"
-	exDestinationFolder = "/home/sherlock/Internship@iit/exudate-detection/Base11-exudate/"
-	colDestinationFolder = "/home/sherlock/Internship@iit/exudate-detection/Base11-color/"
+	bvDestinationFolder = "/home/sherlock/Internship@iit/exudate-detection/diaretdb1-bloodvessel/"
+	exDestinationFolder = "/home/sherlock/Internship@iit/exudate-detection/diaretdb1-exudate/"
+	colDestinationFolder = "/home/sherlock/Internship@iit/exudate-detection/diaretdb1-color/"
 	if not os.path.exists(bvDestinationFolder):
 		os.mkdir(bvDestinationFolder)
 	if not os.path.exists(exDestinationFolder):
