@@ -50,9 +50,9 @@ def remove_OD(image):
 
 
 if __name__ == "__main__":
-    pathFolder = "/home/sherlock/Internship@iit/exudate-detection/diaretdb1/"
+    pathFolder = "/home/sherlock/Internship@iit/exudate-detection/DRIVE/"
     filesArray = [x for x in os.listdir(pathFolder) if os.path.isfile(os.path.join(pathFolder,x))]
-    destinationFolder = "/home/sherlock/Internship@iit/exudate-detection/diaretdb1-exudates-color/"
+    destinationFolder = "/home/sherlock/Internship@iit/exudate-detection/DRIVE-exudates-color/"
 
     if not os.path.exists(destinationFolder):
         os.mkdir(destinationFolder)
