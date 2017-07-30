@@ -53,7 +53,7 @@ def identify_OD(image):
 
 def identify_OD_bv_density(blood_vessel_image):
 	los = line_of_symmetry(blood_vessel_image)
-	sub_image = blood_vessel_image[los-100:los+100,:]	
+	sub_image = blood_vessel_image[los-100:los+100,:]
 	i = 0
 	index = 0
 	density = -1
@@ -64,9 +64,9 @@ def identify_OD_bv_density(blood_vessel_image):
 		if(density < count):
 			density = count
 			index = i
-		i = i + 30
-	cv2.circle
-	return (cx,cy)
+		i = i + 30	
+	print(los,index)
+	return (index,los)
 
 
 def generate_csv(hue_image, intensity_image, SD_image, edge_image):
@@ -97,10 +97,11 @@ def calculate_entropy(image):
 					sum = sum + (histogram[k] * math.log(histogram[k]))
 				k = k + 1
 			entropy[i:i+10,j:j+10] = sum
-			j = j+9
-		i = i+9
+			j = j+10
+		i = i+10
 	ret2,th2 = cv2.threshold(entropy,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
-	return th2
+	newfin = cv2.erode(th2, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3)), iterations=1)
+	return newfin
 
 @jit
 def edge_pixel_image(image,bv_image):
@@ -169,7 +170,7 @@ def extract_bv(image):
 if __name__ == "__main__":
 	pathFolder = "/home/sherlock/Internship@iit/exudate-detection/Base11/"
 	filesArray = [x for x in os.listdir(pathFolder) if os.path.isfile(os.path.join(pathFolder,x))]
-	DestinationFolder = "/home/sherlock/Internship@iit/exudate-detection/Base11-exudates-kmeans/"
+	DestinationFolder = "/home/sherlock/Internship@iit/exudate-detection/Base11_exudates_kmeans/"
 	
 	if not os.path.exists(DestinationFolder):
 		os.mkdir(DestinationFolder)
@@ -179,20 +180,23 @@ if __name__ == "__main__":
 	for file_name in filesArray:
 		print(pathFolder+'/'+file_name)
 		file_name_no_extension = os.path.splitext(file_name)[0]
-		fundus = cv2.imread(pathFolder+'/'+file_name)				
+		fundus = cv2.imread(pathFolder+'/'+file_name)
 		hsv_fundus = cv2.cvtColor(fundus,cv2.COLOR_BGR2HSV)
-		h,s,v = cv2.split(hsv_fundus)	
+		h,s,v = cv2.split(hsv_fundus)
 		gray_scale = cv2.cvtColor(fundus,cv2.COLOR_BGR2GRAY)
 		clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
 		contrast_enhanced_fundus = clahe.apply(gray_scale)
-		entropy = calculate_entropy(contrast_enhanced_fundus)								
-		bv_image = extract_bv(gray_scale)
-		#los = line_of_symmetry(bv_image)	
+		entropy = calculate_entropy(contrast_enhanced_fundus)
+		bv_image = extract_bv(gray_scale)						
 		var_fundus = standard_deviation_image(gray_scale)
-		edge_candidates = edge_pixel_image(gray_scale,bv_image)
-		# (cx1,cy1) = identify_OD(gray_scale)
-		# (cx2,cy2) = identify_OD_bv_density(bv_image)
-		cv2.imwrite(DestinationFolder+file_name_no_extension+"_exudates_kmeans.jpg",entropy)		
+		edge_feature_output = edge_pixel_image(gray_scale,bv_image)
+		#fin_edge = cv2.bitwise_and(edge_candidates,entropy)		
+		(cx,cy) = identify_OD_bv_density(bv_image)				
+		newfin = cv2.dilate(edge_feature_output, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(5,5)), iterations=1)		
+		edge_candidates = cv2.erode(newfin, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3)), iterations=1)
+		cv2.circle(edge_candidates,(cx,cy), 80, (255,255,255), 10)
+		cv2.imwrite(DestinationFolder+file_name_no_extension+"_exudates_kmeans_aft.jpg",edge_candidates)
+		#cv2.imwrite(DestinationFolder+file_name_no_extension+"_candidates_kmeans.jpg",entropy)
 
 # X = np.random.randint(25,50,(25,2))
 # Y = np.random.randint(60,85,(25,2))
