@@ -131,7 +131,7 @@ def extract_bv(image):
 	R3 = cv2.morphologyEx(r3, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(23,23)), iterations = 1)
 	f4 = cv2.subtract(R3,contrast_enhanced_green_fundus)
 	f5 = clahe.apply(f4)
-
+	qqq = f5.copy()
 	# removing very small contours through area parameter noise removal
 	ret,f6 = cv2.threshold(f5,15,255,cv2.THRESH_BINARY)
 	mask = np.ones(f5.shape[:2], dtype="uint8") * 255
@@ -164,13 +164,13 @@ def extract_bv(image):
 	dilated = cv2.erode(blood_vessels, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(7,7)), iterations=1)
 	#dilated1 = cv2.dilate(blood_vessels, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3)), iterations=1)
 	blood_vessels_1 = cv2.bitwise_not(dilated)
-	return blood_vessels_1
+	return qqq
 
 
 if __name__ == "__main__":
-	pathFolder = "/home/sherlock/Internship@iit/exudate-detection/Base11/"
+	pathFolder = "/home/sherlock/Internship@iit/exudate-detection/diaretdb1/"
 	filesArray = [x for x in os.listdir(pathFolder) if os.path.isfile(os.path.join(pathFolder,x))]
-	DestinationFolder = "/home/sherlock/Internship@iit/exudate-detection/Base11_exudates_kmeans/"
+	DestinationFolder = "/home/sherlock/Internship@iit/exudate-detection/diaretdb1_exudates_kmeans/"
 	
 	if not os.path.exists(DestinationFolder):
 		os.mkdir(DestinationFolder)
@@ -186,16 +186,16 @@ if __name__ == "__main__":
 		gray_scale = cv2.cvtColor(fundus,cv2.COLOR_BGR2GRAY)
 		clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
 		contrast_enhanced_fundus = clahe.apply(gray_scale)
-		entropy = calculate_entropy(contrast_enhanced_fundus)
+		#entropy = calculate_entropy(contrast_enhanced_fundus)
 		bv_image = extract_bv(gray_scale)						
-		var_fundus = standard_deviation_image(gray_scale)
-		edge_feature_output = edge_pixel_image(gray_scale,bv_image)
-		#fin_edge = cv2.bitwise_and(edge_candidates,entropy)		
-		(cx,cy) = identify_OD_bv_density(bv_image)				
-		newfin = cv2.dilate(edge_feature_output, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(5,5)), iterations=1)
-		edge_candidates = cv2.erode(newfin, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3)), iterations=1)
-		cv2.circle(edge_candidates,(cx,cy), 100, (0,0,0), -10)
-		cv2.imwrite(DestinationFolder+file_name_no_extension+"_exudates_kmeans_aft.jpg",edge_candidates)
+		# var_fundus = standard_deviation_image(gray_scale)
+		# edge_feature_output = edge_pixel_image(gray_scale,bv_image)
+		# #fin_edge = cv2.bitwise_and(edge_candidates,entropy)		
+		# (cx,cy) = identify_OD_bv_density(bv_image)				
+		# newfin = cv2.dilate(edge_feature_output, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(5,5)), iterations=1)		
+		# edge_candidates = cv2.erode(newfin, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3)), iterations=1)
+		# cv2.circle(edge_candidates,(cx,cy), 100, (0,0,0), -10)
+		cv2.imwrite(DestinationFolder+file_name_no_extension+"_exudates_kmeans_aft.jpg",bv_image)
 		
 		#cv2.imwrite(DestinationFolder+file_name_no_extension+"_candidates_kmeans.jpg",entropy)
 

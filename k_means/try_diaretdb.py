@@ -15,12 +15,32 @@ def standard_deviation_image(image):
 	while i < image.shape[0]:
 		j = 0
 		while j < image.shape[1]:
-			sub_image = clahe_output[i:i+15,j:j+15]
+			sub_image = clahe_output[i:i+9,j:j+9]
 			var = np.var(sub_image)
-			result[i:i+15,j:j+15] = var
-			j = j+15
-		i = i+15
+			result[i:i+9,j:j+9] = var
+			j = j+9
+		i = i+9
 	return result
+
+def get_SD_data(sd_image):	
+	feature_1 = np.reshape(sd_image, (sd_image.size,1))
+	print(feature_1.shape)
+	return feature_1
+
+def get_HUE_data(hue_image):	
+	feature_2 = np.reshape(hue_image,(hue_image.size,1))
+	print(feature_2.shape)
+	return feature_2
+
+def get_INTENSITY_data(intensity_image):	
+	feature_3 = np.reshape(intensity_image,(intensity_image.size,1))
+	print(feature_3.shape)
+	return feature_3
+
+def get_EDGE_data(edge_candidates_image):	
+	feature_4 = np.reshape(edge_candidates_image,(edge_candidates_image.size,1))
+	print(feature_4.shape)
+	return feature_4
 
 def line_of_symmetry(image):
 	image_v = image.copy()
@@ -106,7 +126,7 @@ def calculate_entropy(image):
 @jit
 def edge_pixel_image(image,bv_image):
 	edge_result = image.copy()
-	edge_result = cv2.Canny(edge_result,50,100)	
+	edge_result = cv2.Canny(edge_result,20,100)	
 	i = 0
 	j = 0
 	while i < image.shape[0]:
@@ -168,9 +188,9 @@ def extract_bv(image):
 
 
 if __name__ == "__main__":
-	pathFolder = "/home/sherlock/Internship@iit/exudate-detection/Base11/"
+	pathFolder = "/home/sherlock/Internship@iit/exudate-detection/diaretdb1/"
 	filesArray = [x for x in os.listdir(pathFolder) if os.path.isfile(os.path.join(pathFolder,x))]
-	DestinationFolder = "/home/sherlock/Internship@iit/exudate-detection/Base11_exudates_kmeans/"
+	DestinationFolder = "/home/sherlock/Internship@iit/exudate-detection/Diaretdb1_exudates_kmeans/"
 	
 	if not os.path.exists(DestinationFolder):
 		os.mkdir(DestinationFolder)
@@ -186,18 +206,46 @@ if __name__ == "__main__":
 		gray_scale = cv2.cvtColor(fundus,cv2.COLOR_BGR2GRAY)
 		clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
 		contrast_enhanced_fundus = clahe.apply(gray_scale)
-		entropy = calculate_entropy(contrast_enhanced_fundus)
-		bv_image = extract_bv(gray_scale)						
-		var_fundus = standard_deviation_image(gray_scale)
-		edge_feature_output = edge_pixel_image(gray_scale,bv_image)
+		#entropy = calculate_entropy(contrast_enhanced_fundus)
+		bv_image = extract_bv(contrast_enhanced_fundus)						
+		var_fundus = standard_deviation_image(contrast_enhanced_fundus)
+		edge_feature_output = edge_pixel_image(contrast_enhanced_fundus,bv_image)
 		#fin_edge = cv2.bitwise_and(edge_candidates,entropy)		
 		(cx,cy) = identify_OD_bv_density(bv_image)				
 		newfin = cv2.dilate(edge_feature_output, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(5,5)), iterations=1)
 		edge_candidates = cv2.erode(newfin, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3)), iterations=1)
 		cv2.circle(edge_candidates,(cx,cy), 100, (0,0,0), -10)
-		cv2.imwrite(DestinationFolder+file_name_no_extension+"_exudates_kmeans_aft.jpg",edge_candidates)
+
+		feature1 = get_SD_data(var_fundus)/255
+		feature2 = get_HUE_data(h)/255
+		feature3 = get_INTENSITY_data(contrast_enhanced_fundus)/255
+		feature4 = get_EDGE_data(edge_candidates)/255
+
+		#print(feature1[500:510,:],feature2[500:510,:],feature3[500:510,:],feature4[500:510,:])
 		
-		#cv2.imwrite(DestinationFolder+file_name_no_extension+"_candidates_kmeans.jpg",entropy)
+		data = np.concatenate((feature1,feature2,feature3,feature4),axis=1)
+		data = np.float32(data)
+		criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 50, 0.01)
+		ret,label,center=cv2.kmeans(edge_candidates_image,2,None,criteria,10,cv2.KMEANS_RANDOM_CENTERS)
+		print(center)
+
+		green = [0,255,0]
+		blue = [255,0,0]
+		red = [0,0,255]
+		white = [255,255,255]
+		black = [0,0,0]
+
+		color = [green,blue,red,white,black]
+		color = np.array(color,np.uint8)
+		label = np.reshape(label, gray_scale.shape)
+		y = color[label]
+		y = np.uint8(y)		
+		#cv2.imwrite("kmeans.jpg",y)
+		print("-----------x-------DONE-------x----------")
+		#cv2.waitKey()			
+		cv2.imwrite(DestinationFolder+file_name_no_extension+"_candidate_exudates.jpg",edge_candidates)		
+		cv2.imwrite(DestinationFolder+file_name_no_extension+"_result_exudates_kmeans.jpg",y)
+		cv2.imwrite(DestinationFolder+file_name_no_extension+"_sd_result.jpg",var_fundus)
 
 # X = np.random.randint(25,50,(25,2))
 # Y = np.random.randint(60,85,(25,2))
