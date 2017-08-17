@@ -32,12 +32,22 @@ def get_HUE_data(hue_image):
 	print(feature_2.shape)
 	return feature_2
 
+def get_RED_data(red_channel):	
+	feature_1 = np.reshape(red_channel, (red_channel.size,1))
+	print(feature_1.shape)
+	return feature_1
+
+def get_GREEN_data(green_channel):
+	feature = np.reshape(red_channel, (red_channel.size,1))
+	print(feature.shape)
+	return feature
+
 def get_INTENSITY_data(intensity_image):	
 	feature_3 = np.reshape(intensity_image,(intensity_image.size,1))
 	print(feature_3.shape)
 	return feature_3
 
-def get_EDGE_data(edge_candidates_image):	
+def get_EDGE_data(edge_candidates_image):
 	feature_4 = np.reshape(edge_candidates_image,(edge_candidates_image.size,1))
 	print(feature_4.shape)
 	return feature_4
@@ -88,7 +98,6 @@ def identify_OD_bv_density(blood_vessel_image):
 	print(los,index)
 	return (index,los)
 
-
 def generate_csv(hue_image, intensity_image, SD_image, edge_image):
 	with open('kmeans_featues.csv', 'w') as csvfile:
 		filewriter = csv.writer(csvfile, delimiter=',',quotechar='|', quoting=csv.QUOTE_MINIMAL)
@@ -126,7 +135,7 @@ def calculate_entropy(image):
 @jit
 def edge_pixel_image(image,bv_image):
 	edge_result = image.copy()
-	edge_result = cv2.Canny(edge_result,20,100)	
+	edge_result = cv2.Canny(edge_result,40,100)	
 	i = 0
 	j = 0
 	while i < image.shape[0]:
@@ -139,7 +148,7 @@ def edge_pixel_image(image,bv_image):
 	newfin = cv2.dilate(edge_result, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3)), iterations=1)
 	return newfin
 
-def extract_bv(image):			
+def extract_bv(image):
 	clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
 	contrast_enhanced_green_fundus = clahe.apply(image)
 	# applying alternate sequential filtering (3 times closing opening)
@@ -158,39 +167,37 @@ def extract_bv(image):
 	im2, contours, hierarchy = cv2.findContours(f6.copy(),cv2.RETR_LIST,cv2.CHAIN_APPROX_SIMPLE)
 	for cnt in contours:
 		if cv2.contourArea(cnt) <= 200:
-			cv2.drawContours(mask, [cnt], -1, 0, -1)			
+			cv2.drawContours(mask, [cnt], -1, 0, -1)
 	im = cv2.bitwise_and(f5, f5, mask=mask)
-	ret,fin = cv2.threshold(im,15,255,cv2.THRESH_BINARY_INV)			
-	newfin = cv2.erode(fin, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3)), iterations=1)	
+	ret,fin = cv2.threshold(im,15,255,cv2.THRESH_BINARY_INV)
+	newfin = cv2.erode(fin, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3)), iterations=1)
 
 	# removing blobs of microaneurysm & unwanted bigger chunks taking in consideration they are not straight lines like blood
 	# vessels and also in an interval of area
 	fundus_eroded = cv2.bitwise_not(newfin)
 	xmask = np.ones(image.shape[:2], dtype="uint8") * 255
-	x1, xcontours, xhierarchy = cv2.findContours(fundus_eroded.copy(),cv2.RETR_LIST,cv2.CHAIN_APPROX_SIMPLE)	
+	x1, xcontours, xhierarchy = cv2.findContours(fundus_eroded.copy(),cv2.RETR_LIST,cv2.CHAIN_APPROX_SIMPLE)
 	for cnt in xcontours:
 		shape = "unidentified"
 		peri = cv2.arcLength(cnt, True)
 		approx = cv2.approxPolyDP(cnt, 0.04 * peri, False)
 		if len(approx) > 4 and cv2.contourArea(cnt) <= 3000 and cv2.contourArea(cnt) >= 100:
-			shape = "circle"	
+			shape = "circle"
 		else:
 			shape = "veins"
 		if(shape=="circle"):
-			cv2.drawContours(xmask, [cnt], -1, 0, -1)	
-	
-	finimage = cv2.bitwise_and(fundus_eroded,fundus_eroded,mask=xmask)	
+			cv2.drawContours(xmask, [cnt], -1, 0, -1)
+
+	finimage = cv2.bitwise_and(fundus_eroded,fundus_eroded,mask=xmask)
 	blood_vessels = cv2.bitwise_not(finimage)
-	dilated = cv2.erode(blood_vessels, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(7,7)), iterations=1)
-	#dilated1 = cv2.dilate(blood_vessels, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3)), iterations=1)
-	blood_vessels_1 = cv2.bitwise_not(dilated)
-	return blood_vessels_1
+	return finimage
+
 
 
 if __name__ == "__main__":
 	pathFolder = "/home/sherlock/Internship@iit/exudate-detection/diaretdb1/"
 	filesArray = [x for x in os.listdir(pathFolder) if os.path.isfile(os.path.join(pathFolder,x))]
-	DestinationFolder = "/home/sherlock/Internship@iit/exudate-detection/Diaretdb1_exudates_kmeans/"
+	DestinationFolder = "/home/sherlock/Internship@iit/exudate-detection/diaretdb_exudates_kmeans/"
 	
 	if not os.path.exists(DestinationFolder):
 		os.mkdir(DestinationFolder)
@@ -200,52 +207,57 @@ if __name__ == "__main__":
 	for file_name in filesArray:
 		print(pathFolder+'/'+file_name)
 		file_name_no_extension = os.path.splitext(file_name)[0]
-		fundus = cv2.imread(pathFolder+'/'+file_name)
+		fundus1 = cv2.imread(pathFolder+'/'+file_name)
+		fundus = cv2.resize(fundus1,(800,615))
+		b,g,r = cv2.split(fundus)
+		cv2.imwrite(DestinationFolder+file_name_no_extension+"_resized_fundus.jpg",fundus)
 		hsv_fundus = cv2.cvtColor(fundus,cv2.COLOR_BGR2HSV)
 		h,s,v = cv2.split(hsv_fundus)
 		gray_scale = cv2.cvtColor(fundus,cv2.COLOR_BGR2GRAY)
 		clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
 		contrast_enhanced_fundus = clahe.apply(gray_scale)
+		contrast_enhanced_green_fundus = clahe.apply(g)
 		#entropy = calculate_entropy(contrast_enhanced_fundus)
-		bv_image = extract_bv(contrast_enhanced_fundus)						
-		var_fundus = standard_deviation_image(contrast_enhanced_fundus)
-		edge_feature_output = edge_pixel_image(contrast_enhanced_fundus,bv_image)
-		#fin_edge = cv2.bitwise_and(edge_candidates,entropy)		
-		(cx,cy) = identify_OD_bv_density(bv_image)				
-		newfin = cv2.dilate(edge_feature_output, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(5,5)), iterations=1)
-		edge_candidates = cv2.erode(newfin, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3)), iterations=1)
-		cv2.circle(edge_candidates,(cx,cy), 100, (0,0,0), -10)
+		bv_image = extract_bv(g)
+		cv2.imwrite(DestinationFolder+file_name_no_extension+"_blood_vessels.jpg",bv_image)
+		#var_fundus = standard_deviation_image(contrast_enhanced_fundus)
+		edge_feature_output = edge_pixel_image(contrast_enhanced_green_fundus,bv_image)
+		#fin_edge = cv2.bitwise_and(edge_candidates,entropy)
+		(cx,cy) = identify_OD_bv_density(bv_image)
+		#newfin = cv2.dilate(edge_feature_output, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3)), iterations=1)
+		#edge_candidates = cv2.erode(newfin, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3)), iterations=1)
+		#cv2.circle(edge_candidates,(cx,cy), 100, (0,0,0), -10)
 
-		feature1 = get_SD_data(var_fundus)/255
-		feature2 = get_HUE_data(h)/255
-		feature3 = get_INTENSITY_data(contrast_enhanced_fundus)/255
-		feature4 = get_EDGE_data(edge_candidates)/255
+		# feature1 = get_SD_data(var_fundus)/255
+		# feature2 = get_HUE_data(h)/255
+		# feature3 = get_INTENSITY_data(contrast_enhanced_fundus)/255
+		# feature4 = get_EDGE_data(edge_candidates)/255
 
 		#print(feature1[500:510,:],feature2[500:510,:],feature3[500:510,:],feature4[500:510,:])
 		
-		data = np.concatenate((feature1,feature2,feature3,feature4),axis=1)
-		data = np.float32(data)
-		criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 50, 0.01)
-		ret,label,center=cv2.kmeans(edge_candidates_image,2,None,criteria,10,cv2.KMEANS_RANDOM_CENTERS)
-		print(center)
+		# data = np.concatenate((feature1,feature2,feature3,feature4),axis=1)
+		# data = np.float32(data)
+		# criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 50, 0.01)
+		# ret,label,center=cv2.kmeans(edge_candidates_image,2,None,criteria,10,cv2.KMEANS_RANDOM_CENTERS)
+		# print(center)
 
-		green = [0,255,0]
-		blue = [255,0,0]
-		red = [0,0,255]
-		white = [255,255,255]
-		black = [0,0,0]
+		# green = [0,255,0]
+		# blue = [255,0,0]
+		# red = [0,0,255]
+		# white = [255,255,255]
+		# black = [0,0,0]
 
-		color = [green,blue,red,white,black]
-		color = np.array(color,np.uint8)
-		label = np.reshape(label, gray_scale.shape)
-		y = color[label]
-		y = np.uint8(y)		
-		#cv2.imwrite("kmeans.jpg",y)
+		# color = [green,blue,red,white,black]
+		# color = np.array(color,np.uint8)
+		# label = np.reshape(label, gray_scale.shape)
+		# y = color[label]
+		# y = np.uint8(y)		
+		# #cv2.imwrite("kmeans.jpg",y)
 		print("-----------x-------DONE-------x----------")
 		#cv2.waitKey()			
-		cv2.imwrite(DestinationFolder+file_name_no_extension+"_candidate_exudates.jpg",edge_candidates)		
-		cv2.imwrite(DestinationFolder+file_name_no_extension+"_result_exudates_kmeans.jpg",y)
-		cv2.imwrite(DestinationFolder+file_name_no_extension+"_sd_result.jpg",var_fundus)
+		#cv2.imwrite(DestinationFolder+file_name_no_extension+"_candidate_exudates.jpg",edge_candidates)		
+		#cv2.imwrite(DestinationFolder+file_name_no_extension+"_result_exudates_kmeans.jpg",y)
+		#cv2.imwrite(DestinationFolder+file_name_no_extension+"_sd_result.jpg",var_fundus)
 
 # X = np.random.randint(25,50,(25,2))
 # Y = np.random.randint(60,85,(25,2))

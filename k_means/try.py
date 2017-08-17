@@ -27,17 +27,30 @@ def get_SD_data(sd_image):
 	print(feature_1.shape)
 	return feature_1
 
-def get_HUE_data(hue_image):	
+def get_DistanceFromOD_data(image, centre):
+	my_image = image.copy()
+	x_cor = centre[0]
+	y_cor = centre[1]
+	feature_5 = np.reshape(image, (image.size,1))
+	k = 0
+	while i < image.shape[0]:
+		j = 0
+		while j < image.shape[1]:
+			feature_5[k] = math.abs(x_cor-i) + math.abs(y_cor-j)
+			k = k+1
+	return feature_5
+
+def get_HUE_data(hue_image):
 	feature_2 = np.reshape(hue_image,(hue_image.size,1))
 	print(feature_2.shape)
 	return feature_2
 
-def get_INTENSITY_data(intensity_image):	
+def get_INTENSITY_data(intensity_image):
 	feature_3 = np.reshape(intensity_image,(intensity_image.size,1))
 	print(feature_3.shape)
 	return feature_3
 
-def get_EDGE_data(edge_candidates_image):	
+def get_EDGE_data(edge_candidates_image):
 	feature_4 = np.reshape(edge_candidates_image,(edge_candidates_image.size,1))
 	print(feature_4.shape)
 	return feature_4
@@ -212,6 +225,7 @@ if __name__ == "__main__":
 		edge_feature_output = edge_pixel_image(gray_scale,bv_image)
 		#fin_edge = cv2.bitwise_and(edge_candidates,entropy)		
 		(cx,cy) = identify_OD_bv_density(bv_image)				
+		center = (cx,cy)
 		newfin = cv2.dilate(edge_feature_output, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(5,5)), iterations=1)
 		edge_candidates = cv2.erode(newfin, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3)), iterations=1)
 		cv2.circle(edge_candidates,(cx,cy), 100, (0,0,0), -10)
@@ -219,14 +233,19 @@ if __name__ == "__main__":
 		feature1 = get_SD_data(var_fundus)/255
 		feature2 = get_HUE_data(h)/255
 		feature3 = get_INTENSITY_data(contrast_enhanced_fundus)/255
-		feature4 = get_EDGE_data(edge_candidates)/255
+		#feature5 = get_DistanceFromOD_data(center)
+
+		#print(feature5.shape)
+
+		#feature4 = get_EDGE_data(edge_candidates)/255		
 
 		#print(feature1[500:510,:],feature2[500:510,:],feature3[500:510,:],feature4[500:510,:])
 		
-		data = np.concatenate((feature1,feature2,feature3,feature4),axis=1)		
-		data = np.float32(data)
+		#data = np.concatenate((feature2),axis=1)	
+		#data = np.float32(data)
+		feature2 = np.float32(feature2)
 		criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 50, 0.01)
-		ret,label,center=cv2.kmeans(data,2,None,criteria,50,cv2.KMEANS_RANDOM_CENTERS)
+		ret,label,center=cv2.kmeans(feature2,5,None,criteria,50,cv2.KMEANS_RANDOM_CENTERS)
 		print(center)
 
 		green = [0,255,0]
@@ -235,11 +254,11 @@ if __name__ == "__main__":
 		white = [255,255,255]
 		black = [0,0,0]
 
-		color = [white,black]
+		color = [white,black,red,green,blue]
 		color = np.array(color,np.uint8)
 		label = np.reshape(label, gray_scale.shape)
 		y = color[label]
-		y = np.uint8(y)		
+		y = np.uint8(y)
 		#cv2.imwrite("kmeans.jpg",y)
 		print("-----------x-------DONE-------x----------")
 		#cv2.waitKey()			

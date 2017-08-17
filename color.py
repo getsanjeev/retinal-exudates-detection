@@ -21,27 +21,41 @@ def line_of_symmetry(image):
 
 def remove_OD(image):
 	image_x = image.copy()
-	b,green_fundus,red_fundus = cv2.split(resized_fundus)
-	# circles = cv2.HoughCircles(green_fundus,cv2.HOUGH_GRADIENT,1,50,
- #                            param1=40,param2=30,minRadius=0,maxRadius=0)
-	# cimg = green_fundus
-	# for i in circles[0,:]:
-	# 	cv2.circle(cimg,(i[0],i[1]),i[2],(0,255,0),2)
-	# 	cv2.circle(cimg,(i[0],i[1]),2,(0,0,255),3)
-	# 	cv2.imshow('detected circles',cimg)
-	ret,g_channel = cv2.threshold(green_fundus,(np.amax(green_fundus)+np.mean(green_fundus))/2,255,cv2.THRESH_BINARY)
-	ret,r_channel = cv2.threshold(red_fundus,(np.amax(red_fundus)+np.mean(red_fundus))/2,255,cv2.THRESH_BINARY)	
-	if(g_channel == r_channel).nonzero():
-		image_x = g_channel
-	else:
-		image_x = 0
+	b,g_channel,r_channel = cv2.split(resized_fundus)
+	imagexx = g_channel.copy()
+
+	#ret,g_channel = cv2.threshold(green_fundus,(np.amax(green_fundus)+np.mean(green_fundus))/2,255,cv2.THRESH_BINARY)
+	#ret,r_channel = cv2.threshold(red_fundus,(np.amax(red_fundus)+np.mean(red_fundus))/2,255,cv2.THRESH_BINARY)
+	i=0
+	j=0
+
+	while i < image.shape[0]-40:
+		j = 0
+		while j < image.shape[1]-41:
+			green_fundus = g_channel[i:i+40,j:j+41]
+			red_fundus = r_channel[i:i+40,j:j+41]
+			ret,g = cv2.threshold(green_fundus,(np.amax(green_fundus)+np.mean(green_fundus))/2,255,cv2.THRESH_BINARY)
+			ret,r = cv2.threshold(red_fundus,(np.amax(red_fundus)+np.mean(red_fundus))/2,255,cv2.THRESH_BINARY)
+			imagexx[i:i+40,j:j+41] = cv2.bitwise_and(g,r)
+			j = j +41
+		i = i + 40
+	return imagexx
+
+
+
+	#x = cv2.bitwise_and(g_channel,r_channel)
+
+	# if(g_channel == r_channel).nonzero():
+	# 	image_x = g_channel
+	# else:
+	# 	image_x = 0
 	# for i in range(image_x.shape[0]):
 	# 	for j in range(image_x.shape[1]):
 	# 		if(g_channel[i,j] == r_channel[i,j]):
 	# 			image_x[i,j] = g_channel[i,j]
 	# 		else:
 	# 			image_x[i,j] = 0
-	return image_x
+	return x
 
 
 
@@ -50,9 +64,9 @@ def remove_OD(image):
 
 
 if __name__ == "__main__":
-    pathFolder = "/home/sherlock/Internship@iit/exudate-detection/DRIVE/"
+    pathFolder = "/home/sherlock/Internship@iit/exudate-detection/diaretdb1/"
     filesArray = [x for x in os.listdir(pathFolder) if os.path.isfile(os.path.join(pathFolder,x))]
-    destinationFolder = "/home/sherlock/Internship@iit/exudate-detection/DRIVE-exudates-color/"
+    destinationFolder = "/home/sherlock/Internship@iit/exudate-detection/diaretdb1-hello-color/"
 
     if not os.path.exists(destinationFolder):
         os.mkdir(destinationFolder)
