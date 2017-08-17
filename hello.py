@@ -7,6 +7,29 @@ import math
 from numba import jit
 
 
+@jit
+def get_roi_mean(image):	
+	i = 0
+	j = 0
+	sum = 0
+	count = 0
+	timii = time.time()
+	print("in the fn")
+	while i< image.shape[0]:
+		j = 0
+		while j < image.shape[1]:			
+			if(image[i,j] != 0):
+				sum = sum + image[i,j]
+				count = count + 1
+			j = j +1
+		i = i +1	
+	print(time.time() - timii)
+	if count ==0:
+		count = 1
+	return sum/count
+
+
+
 if __name__ == "__main__":
 	pathFolder1 = "/home/sherlock/Internship@iit/exudate-detection/diaretdb_hardexudates/"
 	pathFolder2 = "/home/sherlock/Internship@iit/exudate-detection/diaretdb_resized/"
@@ -32,13 +55,15 @@ if __name__ == "__main__":
 			threshold = threshold -10
 		ret,bin_label = cv2.threshold(candidate_label,threshold,255,cv2.THRESH_BINARY)
 		#cv2.imwrite(DestinationFolder+file_name_no_extension+"label.jpg",bin_label)
-
 		original_fundus = cv2.imread(pathFolder2+'/'+file_name_no_extension+'_resized.jpg')
 		b,g,r = cv2.split(original_fundus)
 		clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
 		enhanced_original_fundus = clahe.apply(g)
-		print(enhanced_original_fundus.shape,bin_label.shape)		
+		
 		candidate_label = cv2.bitwise_and(enhanced_original_fundus,bin_label)
+		print(np.amax(candidate_label),get_roi_mean(candidate_label))
+		ret,fin_label = cv2.threshold(candidate_label,get_roi_mean(candidate_label) ,255,cv2.THRESH_BINARY)
+		cv2.imwrite(DestinationFolder+file_name_no_extension+"_final_label.jpg",fin_label)
 		cv2.imwrite(DestinationFolder+file_name_no_extension+"_candidate_label.jpg",candidate_label)
 
 		#candidate_label = cv2.bitwise_and(bin_label,)
