@@ -5,6 +5,7 @@ import os
 from matplotlib import pyplot as plt
 import math
 import csv
+from sklearn import preprocessing
 
 @jit
 def standard_deviation_image(image):
@@ -130,16 +131,6 @@ def identify_OD_bv_density(blood_vessel_image):
 	print(los,index)
 	return (index,los)
 
-def generate_csv(hue_image, intensity_image, SD_image, edge_image):
-	with open('kmeans_featues.csv', 'w') as csvfile:
-		filewriter = csv.writer(csvfile, delimiter=',',quotechar='|', quoting=csv.QUOTE_MINIMAL)
-		filewriter.writerow(['hue','intensity','standard_deviation','edges'])
-	while i < hue_image.shape[0]:
-		j = 0
-		while j < hue_image.shape[1]:
-			filewriter.writerow([hue_image[i,j],intensity_image[i,j],SD_image[i,j],edge_image[i,j]])
-			j = j + 1
-		i = i + 1
 
 @jit
 def calculate_entropy(image):
@@ -234,9 +225,9 @@ if __name__ == "__main__":
 	
 	if not os.path.exists(DestinationFolder):
 		os.mkdir(DestinationFolder)
-	with open('exudate_diaretdb_label.csv', 'w') as csvfile:
+	with open('exudate_diaretdb_label.csv', 'a') as csvfile:
 		filewriter = csv.writer(csvfile, delimiter=',',quotechar='|', quoting=csv.QUOTE_MINIMAL)
-		filewriter.writerow(['fundus','hue','standard_deviation','intensity','distance_from_od','label'])	
+		#filewriter.writerow(['fundus','hue','standard_deviation','intensity','distance_from_od','label'])	
 	for file_name in filesArray:
 		print(pathFolder+'/'+file_name)
 		file_name_no_extension = os.path.splitext(file_name)[0]
@@ -276,8 +267,12 @@ if __name__ == "__main__":
 			filewriter = csv.writer(csvfile, delimiter=',',quotechar='|', quoting=csv.QUOTE_MINIMAL)
 			for counter in range(0,feature1.shape[0]):
 				if (edge_label[counter,0] == 1):
-					filewriter.writerow([file_name_no_extension,feature1[counter,0],feature2[counter,0],feature3[counter,0],feature4[counter,0],int(label[counter,0])])
-		print("-----------x-------DONE-------x----------")				
+					filewriter.writerow([feature1[counter,0],feature2[counter,0],feature3[counter,0],feature4[counter,0],int(label[counter,0])])
+		print("-----------x-------DONE-------x----------")	
+
+
+
+
 
 
 

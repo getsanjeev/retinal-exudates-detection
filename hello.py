@@ -54,6 +54,7 @@ if __name__ == "__main__":
 			threshold = threshold+50
 		else:
 			threshold = threshold -10
+
 		ret,bin_label = cv2.threshold(candidate_label,threshold,255,cv2.THRESH_BINARY)
 		#cv2.imwrite(DestinationFolder+file_name_no_extension+"label.jpg",bin_label)
 		original_fundus = cv2.imread(pathFolder2+'/'+file_name_no_extension+'_resized.jpg')
@@ -64,6 +65,7 @@ if __name__ == "__main__":
 		candidate_label = cv2.bitwise_and(enhanced_original_fundus,bin_label)		
 		ret,fin_label = cv2.threshold(candidate_label,get_roi_mean(candidate_label)+5,255,cv2.THRESH_BINARY)
 		cv2.imwrite(DestinationFolder+file_name_no_extension+"_final_label.jpg",fin_label)
+		print(fin_label.shape,"www")
 		cv2.imwrite(DestinationFolder+file_name_no_extension+"_candidate_label.jpg",candidate_label)
 
 		#candidate_label = cv2.bitwise_and(bin_label,)
