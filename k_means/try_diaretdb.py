@@ -4,6 +4,7 @@ from numba import jit
 import os
 from matplotlib import pyplot as plt
 import math
+import csv
 
 @jit
 def standard_deviation_image(image):
@@ -21,6 +22,37 @@ def standard_deviation_image(image):
 			j = j+9
 		i = i+9
 	return result
+
+def get_DistanceFromOD_data(image, centre):
+	my_image = image.copy()
+	x_cor = centre[0]
+	y_cor = centre[1]
+	feature_5 = np.reshape(image, (image.size,1))
+	k = 0
+	i = 0
+	j = 0
+	while i < image.shape[0]:
+		j = 0
+		while j < image.shape[1]:
+			feature_5[k] = math.fabs(x_cor-i) + math.fabs(y_cor-j)
+			j = j+1
+			k = k+1
+		i = i+1
+	return feature_5
+
+def count_ones(image):
+	i = 0
+	j = 0 
+	k = 0
+	while i < image.shape[0]:
+		j = 0
+		while j < image.shape[1]:
+			if int(image[i,j]) == 1 :
+				k = k+1
+			j = j + 1			
+		i = i+1
+	return k
+
 
 def get_SD_data(sd_image):	
 	feature_1 = np.reshape(sd_image, (sd_image.size,1))
@@ -198,12 +230,13 @@ if __name__ == "__main__":
 	pathFolder = "/home/sherlock/Internship@iit/exudate-detection/diaretdb1/"
 	filesArray = [x for x in os.listdir(pathFolder) if os.path.isfile(os.path.join(pathFolder,x))]
 	DestinationFolder = "/home/sherlock/Internship@iit/exudate-detection/diaretdb_exudates_kmeans/"
+	LabelFolder = "/home/sherlock/Internship@iit/exudate-detection/diaretdb1-label/"	
 	
 	if not os.path.exists(DestinationFolder):
 		os.mkdir(DestinationFolder)
-	# with open('hemmorages12.csv', 'w') as csvfile:
-	# 	filewriter = csv.writer(csvfile, delimiter=',',quotechar='|', quoting=csv.QUOTE_MINIMAL)
-	# 	filewriter.writerow(['image_name', 'hue','intensity','standard_deviation','edges'])
+	with open('exudate_diaretdb_label.csv', 'w') as csvfile:
+		filewriter = csv.writer(csvfile, delimiter=',',quotechar='|', quoting=csv.QUOTE_MINIMAL)
+		filewriter.writerow(['fundus','hue','standard_deviation','intensity','distance_from_od','label'])	
 	for file_name in filesArray:
 		print(pathFolder+'/'+file_name)
 		file_name_no_extension = os.path.splitext(file_name)[0]
@@ -220,18 +253,33 @@ if __name__ == "__main__":
 		#entropy = calculate_entropy(contrast_enhanced_fundus)
 		bv_image = extract_bv(g)
 		cv2.imwrite(DestinationFolder+file_name_no_extension+"_blood_vessels.jpg",bv_image)
-		#var_fundus = standard_deviation_image(contrast_enhanced_fundus)
+		var_fundus = standard_deviation_image(contrast_enhanced_fundus)
 		edge_feature_output = edge_pixel_image(contrast_enhanced_green_fundus,bv_image)
 		#fin_edge = cv2.bitwise_and(edge_candidates,entropy)
 		(cx,cy) = identify_OD_bv_density(bv_image)
-		#newfin = cv2.dilate(edge_feature_output, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3)), iterations=1)
-		#edge_candidates = cv2.erode(newfin, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3)), iterations=1)
-		#cv2.circle(edge_candidates,(cx,cy), 100, (0,0,0), -10)
+		newfin = cv2.dilate(edge_feature_output, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3)), iterations=1)
+		edge_candidates = cv2.erode(newfin, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3)), iterations=1)
+		cv2.circle(edge_candidates,(cx,cy), 100, (0,0,0), -10)
+		edge_label = np.reshape(edge_candidates,(edge_candidates.size,1))/255
 
-		# feature1 = get_SD_data(var_fundus)/255
-		# feature2 = get_HUE_data(h)/255
-		# feature3 = get_INTENSITY_data(contrast_enhanced_fundus)/255
-		# feature4 = get_EDGE_data(edge_candidates)/255
+		feature1 = get_SD_data(var_fundus)/255
+		feature2 = get_HUE_data(h)/255
+		feature3 = get_INTENSITY_data(contrast_enhanced_fundus)/255
+		feature4 = get_DistanceFromOD_data(bv_image,(cx,cy))/(var_fundus.shape[0]+var_fundus.shape[1])
+		label_image = cv2.imread(LabelFolder+'/'+file_name_no_extension+"_final_label.jpg")		
+		b,gg,r = cv2.split(label_image)		
+		label = np.reshape(gg,(gg.size,1))/255
+		print(gg[500:520,0:0])
+		co = count_ones(gg)
+		print("no fo exudates",co)
+		with open('exudate_diaretdb_label.csv', 'a') as csvfile:
+			filewriter = csv.writer(csvfile, delimiter=',',quotechar='|', quoting=csv.QUOTE_MINIMAL)
+			for counter in range(0,feature1.shape[0]):
+				if (edge_label[counter,0] == 1):
+					filewriter.writerow([file_name_no_extension,feature1[counter,0],feature2[counter,0],feature3[counter,0],feature4[counter,0],int(label[counter,0])])
+		print("-----------x-------DONE-------x----------")				
+
+
 
 		#print(feature1[500:510,:],feature2[500:510,:],feature3[500:510,:],feature4[500:510,:])
 		
@@ -252,8 +300,7 @@ if __name__ == "__main__":
 		# label = np.reshape(label, gray_scale.shape)
 		# y = color[label]
 		# y = np.uint8(y)		
-		# #cv2.imwrite("kmeans.jpg",y)
-		print("-----------x-------DONE-------x----------")
+		# #cv2.imwrite("kmeans.jpg",y)		
 		#cv2.waitKey()			
 		#cv2.imwrite(DestinationFolder+file_name_no_extension+"_candidate_exudates.jpg",edge_candidates)		
 		#cv2.imwrite(DestinationFolder+file_name_no_extension+"_result_exudates_kmeans.jpg",y)
