@@ -26,6 +26,7 @@ def get_roi_mean(image):
 	print(time.time() - timii)
 	if count ==0:
 		count = 1
+	print("count",count)
 	return sum/count
 
 
@@ -45,7 +46,7 @@ if __name__ == "__main__":
 		file_name_no_extension = os.path.splitext(file_name)[0]
 		print(file_name_no_extension)
 		fundus1 = cv2.imread(pathFolder1+'/'+file_name)
-		fundus2 = cv2.cvtColor(fundus1,cv2.COLOR_BGR2GRAY)
+		b,fundus2,r = cv2.split(fundus1)		
 		dim = (800,615)
 		candidate_label = cv2.resize(fundus2,dim)
 		threshold = np.amax(candidate_label)
@@ -60,9 +61,8 @@ if __name__ == "__main__":
 		clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
 		enhanced_original_fundus = clahe.apply(g)
 		
-		candidate_label = cv2.bitwise_and(enhanced_original_fundus,bin_label)
-		print(np.amax(candidate_label),get_roi_mean(candidate_label))
-		ret,fin_label = cv2.threshold(candidate_label,get_roi_mean(candidate_label) ,255,cv2.THRESH_BINARY)
+		candidate_label = cv2.bitwise_and(enhanced_original_fundus,bin_label)		
+		ret,fin_label = cv2.threshold(candidate_label,get_roi_mean(candidate_label)+5,255,cv2.THRESH_BINARY)
 		cv2.imwrite(DestinationFolder+file_name_no_extension+"_final_label.jpg",fin_label)
 		cv2.imwrite(DestinationFolder+file_name_no_extension+"_candidate_label.jpg",candidate_label)
 
