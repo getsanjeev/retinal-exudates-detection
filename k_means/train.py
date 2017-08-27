@@ -234,7 +234,7 @@ if __name__ == "__main__":
 		print(pathFolder+'/'+file_name,"Read this image",file_name_no_extension)
 		fundus1 = cv2.imread(pathFolder+'/'+file_name)
 		fundus = cv2.resize(fundus1,(800,615))
-		cv2.imwrite(DestinationFolder+file_name_no_extension+"_resized_fundus.jpg",fundus)				
+		cv2.imwrite(DestinationFolder+file_name_no_extension+"_resized_fundus.bmp",fundus)				
 		b,g,r = cv2.split(fundus)		
 		hsv_fundus = cv2.cvtColor(fundus,cv2.COLOR_BGR2HSV)
 		h,s,v = cv2.split(hsv_fundus)
@@ -246,7 +246,7 @@ if __name__ == "__main__":
 		average_hue = np.mean(h)/255
 		#entropy = calculate_entropy(contrast_enhanced_fundus)
 		bv_image = extract_bv(g)
-		cv2.imwrite(DestinationFolder+file_name_no_extension+"_blood_vessels.jpg",bv_image)
+		cv2.imwrite(DestinationFolder+file_name_no_extension+"_blood_vessels.bmp",bv_image)
 		var_fundus = standard_deviation_image(contrast_enhanced_fundus)
 		edge_feature_output = edge_pixel_image(contrast_enhanced_green_fundus,bv_image)
 		#fin_edge = cv2.bitwise_and(edge_candidates,entropy)
@@ -255,9 +255,9 @@ if __name__ == "__main__":
 		edge_candidates = newfin.copy()
 		cv2.circle(edge_candidates,(cx,cy), 100, (0,0,0), -10)
 		feature5 = np.reshape(edge_candidates,(edge_candidates.size,1))/255
-		cv2.imwrite(DestinationFolder+file_name_no_extension+"_edge_candidates.jpg",edge_candidates)
-		label_image = cv2.imread(LabelFolder+'/'+file_name_no_extension+"_final_label.jpg")
-		print(LabelFolder+'/'+file_name_no_extension+"_final_label.jpg")
+		cv2.imwrite(DestinationFolder+file_name_no_extension+"_edge_candidates.bmp",edge_candidates)
+		label_image = cv2.imread(LabelFolder+'/'+file_name_no_extension+"_final_label.bmp")
+		print(LabelFolder+'/'+file_name_no_extension+"_final_label.bmp")
 
 		feature1 = get_SD_data(var_fundus)/255
 		feature2 = get_HUE_data(h)/255
@@ -316,11 +316,11 @@ if __name__ == "__main__":
 		# label = np.reshape(label, gray_scale.shape)
 		# y = color[label]
 		# y = np.uint8(y)		
-		# #cv2.imwrite("kmeans.jpg",y)		
+		# #cv2.imwrite("kmeans.bmp",y)		
 		#cv2.waitKey()			
-		#cv2.imwrite(DestinationFolder+file_name_no_extension+"_candidate_exudates.jpg",edge_candidates)		
-		#cv2.imwrite(DestinationFolder+file_name_no_extension+"_result_exudates_kmeans.jpg",y)
-		#cv2.imwrite(DestinationFolder+file_name_no_extension+"_sd_result.jpg",var_fundus)
+		#cv2.imwrite(DestinationFolder+file_name_no_extension+"_candidate_exudates.bmp",edge_candidates)		
+		#cv2.imwrite(DestinationFolder+file_name_no_extension+"_result_exudates_kmeans.bmp",y)
+		#cv2.imwrite(DestinationFolder+file_name_no_extension+"_sd_result.bmp",var_fundus)
 
 # X = np.random.randint(25,50,(25,2))
 # Y = np.random.randint(60,85,(25,2))

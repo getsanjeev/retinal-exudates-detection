@@ -28,6 +28,8 @@ def count_ones(image,value):
 	return k
 
 
+os.rename("test.csv","test.txt")
+os.rename("train.csv","train.txt")
 print("fcuuk")
 dataset_train = np.loadtxt('train.txt', delimiter=",")
 #dataset_train = pd.read_csv("train.csv")
@@ -81,12 +83,13 @@ i = 0
 j = 0
 lc = 0
 while size_m < len(name_array):
-	current = cv2.imread(DestinationFolder+name_array[size_m]+"_edge_candidates.jpg")
-	print(DestinationFolder+name_array[size_m]+"_edge_candidates.jpg")
+	current = cv2.imread(DestinationFolder+name_array[size_m]+"_edge_candidates.bmp")
+	print(DestinationFolder+name_array[size_m]+"_edge_candidates.bmp")
 	cv2.imshow("iodjbj",current)
 	print("current ka size",current.shape)
 	x,current_m,z = cv2.split(current)
 	print(count_ones(current_m,255),"now again check",name_array[size_m])
+	i = 0
 	while i < current_m.shape[0]:
 		j = 0
 		while j < current_m.shape[1]:
@@ -95,8 +98,8 @@ while size_m < len(name_array):
 				lc = lc + 1
 			j = j + 1
 		i = i + 1
-	cv2.imwrite(resultFolder+name_array[size_m]+"_result.jpg",current_m)
-	size_m = size_m + 1	
+	cv2.imwrite(resultFolder+name_array[size_m]+"_result.bmp",current_m)
+	size_m = size_m + 1
 
 print("DONE_-------------------x----xxxxx-xx-x")
 

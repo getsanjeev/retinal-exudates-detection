@@ -18,6 +18,25 @@ from sklearn.ensemble import AdaBoostClassifier
 from sklearn.tree import DecisionTreeClassifier
 
 
+@jit
+def check_diff(image1,image2):
+	print(image1.shape,image2.shape,"priniting shape of images")
+	print(image1[400:410,400:415])
+	print("printing second image..")
+	print(image2[400:410,400:415])
+	i = 0
+	j = 0
+	inc = 0
+	while i < image1.shape[0]:
+		j = 0
+		while j < image1.shape[1]:
+			if image1[i,j] != image2[i,j]:
+				inc = inc + 1
+			j = j + 1
+		i = i + 1
+	print("no of differences: ",inc)
+
+
 
 @jit
 def show_final_result(name_array):
@@ -27,8 +46,8 @@ def show_final_result(name_array):
 	counter = 0
 	k = 0
 	while k < len(name_array):
-		edge_candidates = cv2.imread(DestinationFolder+name_array[k]+"_edge_candidates.jpg")
-		print("printing",DestinationFolder+name_array[k]+"_edge_candidates.jpg")
+		edge_candidates = cv2.imread(DestinationFolder+name_array[k]+"_edge_candidates.bmp")
+		print("printing",DestinationFolder+name_array[k]+"_edge_candidates.bmp")
 		result = edge_candidates.copy()
 		while i < edge_candidates.shape[0]:
 			j = 0
@@ -40,7 +59,7 @@ def show_final_result(name_array):
 				j = j + 1
 			i = i + 1
 		k = k +1
-	cv2.imwrite(DestinationFolder+file_name_no_extension+"final_result.jpg",result)
+	cv2.imwrite(DestinationFolder+file_name_no_extension+"final_result.bmp",result)
 
 @jit
 def standard_deviation_image(image):
@@ -282,7 +301,7 @@ if __name__ == "__main__":
 		average_hue = np.mean(h)/255
 		#entropy = calculate_entropy(contrast_enhanced_fundus)
 		bv_image = extract_bv(g)
-		cv2.imwrite(DestinationFolder+file_name_no_extension+"_blood_vessels.jpg",bv_image)
+		cv2.imwrite(DestinationFolder+file_name_no_extension+"_blood_vessels.bmp",bv_image)
 		var_fundus = standard_deviation_image(contrast_enhanced_fundus)
 		edge_feature_output = edge_pixel_image(contrast_enhanced_green_fundus,bv_image)
 		#fin_edge = cv2.bitwise_and(edge_candidates,entropy)
@@ -291,8 +310,11 @@ if __name__ == "__main__":
 		edge_candidates = newfin.copy()
 		edge_candidates = cv2.circle(edge_candidates,(cx,cy), 100, (0,0,0), -10)
 
-		cv2.imwrite(DestinationFolder+file_name_no_extension+"_edge_candidates.jpg",edge_candidates)
-		label_image = cv2.imread(LabelFolder+'/'+file_name_no_extension+"_final_label.jpg")
+		cv2.imwrite(DestinationFolder+file_name_no_extension+"_edge_candidates.bmp",edge_candidates)
+		temp_image = cv2.imread(DestinationFolder+file_name_no_extension+"_edge_candidates.bmp")
+		q,temp_i,ww = cv2.split(temp_image)
+		check_diff(edge_candidates,temp_i)
+		label_image = cv2.imread(LabelFolder+'/'+file_name_no_extension+"_final_label.bmp")
 
 		feature1 = get_SD_data(var_fundus)/255
 		feature2 = get_HUE_data(h)/255
@@ -303,9 +325,9 @@ if __name__ == "__main__":
 		feature7 = get_DistanceFromOD_data(bv_image,(cx,cy))/(var_fundus.shape[0]+var_fundus.shape[1])
 
 		b,gg,r = cv2.split(label_image)
-		label = np.reshape(gg,(gg.size,1))/255				
+		label = np.reshape(gg,(gg.size,1))/255
 		co3 = count_ones(edge_candidates,255)
-		print(co3,"check me")				
+		print(co3,"check me")
 		counter = 0
 		temp = 0
 		this_image_rows = 0
@@ -376,29 +398,33 @@ if __name__ == "__main__":
 	print("confusion matrix")
 	print (confusion_matrix(Y_test,Y_predicted))
 
+	# resultFolder = "/home/sherlock/Internship@iit/exudate-detection/results-exudates/"	
+	# print(len(name_array))
+	# if not os.path.exists(resultFolder):
+	# 	os.mkdir(resultFolder)
+	# size_m = 0
+	# i = 0
+	# j = 0
+	# lc = 0
+	# while size_m < len(name_array):
+	# 	current = cv2.imread(DestinationFolder+name_array[size_m]+"_edge_candidates.bmp")
+	# 	print(DestinationFolder+name_array[size_m]+"_edge_candidates.bmp")		
+	# 	print("current ka size",current.shape)
+	# 	x,current_m,z = cv2.split(current)
+	# 	print(count_ones(current_m,255),"now again check",name_array[size_m])
+	# 	i = 0		
+	# 	while i < current_m.shape[0]:
+	# 		j = 0
+	# 		while j < current_m.shape[1]:
+	# 			if current_m[i,j] == 255:
+	# 				current_m[i,j] = 255*Y_predicted[lc]
+	# 				lc = lc + 1
+	# 			j = j + 1
+	# 		i = i + 1
+	# 	cv2.imwrite(resultFolder+name_array[size_m]+"_result.bmp",current_m)
+	# 	size_m = size_m + 1	
 
-	resultFolder = "/home/sherlock/Internship@iit/exudate-detection/results-exudates/"	
-	if not os.path.exists(resultFolder):
-		os.mkdir(resultFolder)
-	size_m = 0
-	i = 0
-	j = 0
-	lc = 0
-	while size_m < len(name_array):
-		current = cv2.imread(DestinationFolder+name_array[size_m]+"_edge_candidates.jpg")
-		x,current_m,z = current.split()
-		print(count_ones(current_m,255),"now again check")
-		while i < current_m.shape[0]:
-			j = 0
-			while j < current_m.shape[1]:
-				if current[i,j] == 1:
-					current_m[i,j] = 255*Y_predicted[lc,0]
-					lc = lc + 1
-				j = j + 1
-			i = i + 1
-		cv2.imwrite(resultFolder+name_array[size_m]+"_result.jpg")
-		size_m = size_m + 1
-
+	# print("DONE_-------------------x----xxxxx-xx-x")
 
 
 
@@ -421,11 +447,11 @@ if __name__ == "__main__":
 		# label = np.reshape(label, gray_scale.shape)
 		# y = color[label]
 		# y = np.uint8(y)		
-		# #cv2.imwrite("kmeans.jpg",y)		
+		# #cv2.imwrite("kmeans.bmp",y)		
 		#cv2.waitKey()			
-		#cv2.imwrite(DestinationFolder+file_name_no_extension+"_candidate_exudates.jpg",edge_candidates)		
-		#cv2.imwrite(DestinationFolder+file_name_no_extension+"_result_exudates_kmeans.jpg",y)
-		#cv2.imwrite(DestinationFolder+file_name_no_extension+"_sd_result.jpg",var_fundus)
+		#cv2.imwrite(DestinationFolder+file_name_no_extension+"_candidate_exudates.bmp",edge_candidates)		
+		#cv2.imwrite(DestinationFolder+file_name_no_extension+"_result_exudates_kmeans.bmp",y)
+		#cv2.imwrite(DestinationFolder+file_name_no_extension+"_sd_result.bmp",var_fundus)
 
 # X = np.random.randint(25,50,(25,2))
 # Y = np.random.randint(60,85,(25,2))
