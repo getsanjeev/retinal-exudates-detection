@@ -6,6 +6,12 @@ __pycache__/
 # C extensions
 *.so
 
+testing-results/
+training-results/
+trail1/
+extras/
+diaretdb1-label/
+diaretdb_resized/
 # Distribution / packaging
 .Python
 build/
@@ -25,7 +31,10 @@ wheels/
 *.egg
 *.txt
 *.csv
-
+*.giff
+*.gif
+*.tif
+*.tiff
 # PyInstaller
 #  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.

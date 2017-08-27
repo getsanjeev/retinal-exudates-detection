@@ -6,6 +6,41 @@ from matplotlib import pyplot as plt
 import math
 import csv
 from sklearn import preprocessing
+import numpy as np
+from sklearn import preprocessing
+import random
+from sklearn.metrics import confusion_matrix
+from sklearn.svm import SVC
+from sklearn.metrics import accuracy_score
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.ensemble import AdaBoostClassifier
+from sklearn.tree import DecisionTreeClassifier
+
+
+
+@jit
+def show_final_result(name_array):
+	i = 0
+	j = 0
+	lc = 0
+	counter = 0
+	k = 0
+	while k < len(name_array):
+		edge_candidates = cv2.imread(DestinationFolder+name_array[k]+"_edge_candidates.jpg")
+		print("printing",DestinationFolder+name_array[k]+"_edge_candidates.jpg")
+		result = edge_candidates.copy()
+		while i < edge_candidates.shape[0]:
+			j = 0
+			while j < edge_candidates.shape[1]:
+				if edge_label[lc,0]==1:
+					result[i,j] = Y_predicted[counter]
+					counter = counter + 1
+				lc = lc +1
+				j = j + 1
+			i = i + 1
+		k = k +1
+	cv2.imwrite(DestinationFolder+file_name_no_extension+"final_result.jpg",result)
 
 @jit
 def standard_deviation_image(image):
@@ -57,34 +92,33 @@ def count_ones(image,value):
 
 def get_SD_data(sd_image):	
 	feature_1 = np.reshape(sd_image, (sd_image.size,1))
-	print(feature_1.shape,"feature1")
+	print(feature_1.shape)
 	return feature_1
 
 def get_HUE_data(hue_image):	
 	feature_2 = np.reshape(hue_image,(hue_image.size,1))
-	print(feature_2.shape,"feature2")
+	print(feature_2.shape)
 	return feature_2
+
+def get_RED_data(red_channel):	
+	feature_1 = np.reshape(red_channel, (red_channel.size,1))
+	print(feature_1.shape)
+	return feature_1
+
+def get_GREEN_data(green_channel):
+	feature = np.reshape(red_channel, (red_channel.size,1))
+	print(feature.shape)
+	return feature
 
 def get_INTENSITY_data(intensity_image):	
 	feature_3 = np.reshape(intensity_image,(intensity_image.size,1))
-	print(feature_3.shape,"feature3")
+	print(feature_3.shape)
 	return feature_3
 
 def get_EDGE_data(edge_candidates_image):
 	feature_4 = np.reshape(edge_candidates_image,(edge_candidates_image.size,1))
-	print(feature_4.shape,"feature4")
+	print(feature_4.shape)
 	return feature_4
-
-def get_RED_data(red_channel):	
-	feature_5 = np.reshape(red_channel, (red_channel.size,1))
-	print(feature_5.shape,"feature5")
-	return feature_5
-
-def get_GREEN_data(green_channel):
-	feature_6 = np.reshape(green_channel, (green_channel.size,1))
-	print(feature_6.shape,"feature6")
-	return feature_6
-
 
 def line_of_symmetry(image):
 	image_v = image.copy()
@@ -219,85 +253,109 @@ def extract_bv(image):
 
 
 if __name__ == "__main__":
-	pathFolder = "/home/sherlock/Internship@iit/exudate-detection/training/"
+	pathFolder = "/home/sherlock/Internship@iit/exudate-detection/testing/"
 	filesArray = [x for x in os.listdir(pathFolder) if os.path.isfile(os.path.join(pathFolder,x))]
-	DestinationFolder = "/home/sherlock/Internship@iit/exudate-detection/training-results/"
-	LabelFolder = "/home/sherlock/Internship@iit/exudate-detection/diaretdb1-label/"	
-	
-	if not os.path.exists(DestinationFolder):
-		os.mkdir(DestinationFolder)	
-
-	qq = 0
-		
-	for file_name in filesArray:		
-		file_name_no_extension = os.path.splitext(file_name)[0]
-		print(pathFolder+'/'+file_name,"Read this image",file_name_no_extension)
-		fundus1 = cv2.imread(pathFolder+'/'+file_name)
-		fundus = cv2.resize(fundus1,(800,615))
-		cv2.imwrite(DestinationFolder+file_name_no_extension+"_resized_fundus.bmp",fundus)				
-		b,g,r = cv2.split(fundus)		
-		hsv_fundus = cv2.cvtColor(fundus,cv2.COLOR_BGR2HSV)
-		h,s,v = cv2.split(hsv_fundus)
-		gray_scale = cv2.cvtColor(fundus,cv2.COLOR_BGR2GRAY)
-		clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
-		contrast_enhanced_fundus = clahe.apply(gray_scale)		
-		contrast_enhanced_green_fundus = clahe.apply(g)
-		average_intensity = np.mean(contrast_enhanced_fundus)/255
-		average_hue = np.mean(h)/255
-		#entropy = calculate_entropy(contrast_enhanced_fundus)
-		bv_image = extract_bv(g)
-		cv2.imwrite(DestinationFolder+file_name_no_extension+"_blood_vessels.bmp",bv_image)
-		var_fundus = standard_deviation_image(contrast_enhanced_fundus)
-		edge_feature_output = edge_pixel_image(contrast_enhanced_green_fundus,bv_image)
-		#fin_edge = cv2.bitwise_and(edge_candidates,entropy)
-		(cx,cy) = identify_OD_bv_density(bv_image)
-		newfin = cv2.dilate(edge_feature_output, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3)), iterations=1)
-		edge_candidates = newfin.copy()
-		cv2.circle(edge_candidates,(cx,cy), 100, (0,0,0), -10)
-		feature5 = np.reshape(edge_candidates,(edge_candidates.size,1))/255
-		cv2.imwrite(DestinationFolder+file_name_no_extension+"_edge_candidates.bmp",edge_candidates)
-		label_image = cv2.imread(LabelFolder+'/'+file_name_no_extension+"_final_label.bmp")
-		print(LabelFolder+'/'+file_name_no_extension+"_final_label.bmp")
-
-		feature1 = get_SD_data(var_fundus)/255
-		feature2 = get_HUE_data(h)/255
-		feature3 = get_INTENSITY_data(contrast_enhanced_fundus)/255
-		feature4 = get_EDGE_data(edge_candidates)/255
-		feature5 = get_RED_data(r)/255
-		feature6 = get_GREEN_data(g)/255
-		feature7 = get_DistanceFromOD_data(bv_image,(cx,cy))/(var_fundus.shape[0]+var_fundus.shape[1])
-
-		b,gg,r = cv2.split(label_image)
-		label = np.reshape(gg,(gg.size,1))/255					
-		co3 = count_ones(edge_candidates,255)
-		print(co3,"check me")			
-		temp = 0
-		counter = 0
-		this_image_rows = 0
-		with open('train.csv', 'a') as csvfile:
-			filewriter = csv.writer(csvfile, delimiter=',',quotechar='|', quoting=csv.QUOTE_MINIMAL)
-			while counter < feature1.shape[0]:
-				if feature4[counter,0] == 1:
-					qq = qq + 1
-					temp = counter
-					this_image_rows = this_image_rows+1
-					filewriter.writerow([feature1[counter,0],feature2[counter,0],feature3[counter,0],feature5[counter,0],feature6[counter,0],feature7[counter,0],average_intensity,average_hue,int(label[counter,0])])					
-				counter = counter + 1
+	DestinationFolder = "/home/sherlock/Internship@iit/exudate-detection/testing-results/"
+	LabelFolder = "/home/sherlock/Internship@iit/exudate-detection/diaretdb1-label/"
+	name_array = []
+	number = 0		
+	fundus1 = cv2.imread("image005.png")
+	fundus = cv2.resize(fundus1,(800,615))
+	b,g,r = cv2.split(fundus)		
+	hsv_fundus = cv2.cvtColor(fundus,cv2.COLOR_BGR2HSV)
+	h,s,v = cv2.split(hsv_fundus)
+	gray_scale = cv2.cvtColor(fundus,cv2.COLOR_BGR2GRAY)
+	clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
+	contrast_enhanced_fundus = clahe.apply(gray_scale)		
+	contrast_enhanced_green_fundus = clahe.apply(g)
+	average_intensity = np.mean(contrast_enhanced_fundus)
+	#entropy = calculate_entropy(contrast_enhanced_fundus)
+	bv_image = extract_bv(g)
+	cv2.imwrite("_blood_vessels.jpg",bv_image)
+	var_fundus = standard_deviation_image(contrast_enhanced_fundus)
+	edge_feature_output = edge_pixel_image(contrast_enhanced_green_fundus,bv_image)
+	#fin_edge = cv2.bitwise_and(edge_candidates,entropy)
+	(cx,cy) = identify_OD_bv_density(bv_image)
+	newfin = cv2.dilate(edge_feature_output, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3)), iterations=1)
+	edge_candidates = newfin.copy()
+	cv2.circle(edge_candidates,(cx,cy), 100, (0,0,0), -10)
+	edge_label = np.reshape(edge_candidates,(edge_candidates.size,1))/255
+	cv2.imwrite("_edge_candidates.jpg",edge_candidates)
+	label_image = cv2.imread("image005_final_label.jpg")
+	feature1 = get_SD_data(var_fundus)/255
+	feature2 = get_HUE_data(h)/255
+	feature3 = get_INTENSITY_data(contrast_enhanced_fundus)/255
+	feature4 = get_DistanceFromOD_data(bv_image,(cx,cy))/(var_fundus.shape[0]+var_fundus.shape[1])
+	b,gg,r = cv2.split(label_image)
+	label = np.reshape(gg,(gg.size,1))/255
+	co = count_ones(edge_label,1)
+	co2 = count_ones(label,1)
+	co3 = count_ones(edge_candidates,255)
+	print("no fo exudates_mine",co,co3)
+	print("no fo exudates_original",co2)
+	with open('qwerty.csv', 'a') as csvfile:
+		filewriter = csv.writer(csvfile, delimiter=',',quotechar='|', quoting=csv.QUOTE_MINIMAL)
+		for counter in range(0,feature1.shape[0]):
+			if (edge_label[counter,0] == 1):
+				filewriter.writerow([feature1[counter,0],feature2[counter,0],feature3[counter,0],feature4[counter,0],average_intensity,int(label[counter,0])])
 
 		print("-----------x-------DONE-------x----------")
-		print(feature1[temp,0],feature2[temp,0],feature3[temp,0],feature5[temp,0],feature6[temp,0],feature7[temp,0],average_intensity,average_hue,int(label[temp,0]))
-		print("no of rows addded : ", this_image_rows)
 
-	print("no of pixxels in total", qq)
+# 	print(name_array,"HEY NAMES")	
+# 	os.rename("qwerty.csv", "qwerty.txt")	
+# 	dataset_train = np.loadtxt('train.txt', delimiter=",")
+# 	print(dataset_train.shape,"train_shape")	
+# 	dataset_test = np.loadtxt('test.txt', delimiter=",")
+# 	print(dataset_test.shape,"test_shape")
+# 	X_train = dataset_train[:,0:5]
+# 	Y_train = dataset_train[:,5]
+# 	X_test = dataset_test[:,0:5]
+# 	Y_test = dataset_test[:,5]
+# 	print(dataset_train[100000:100130,:])
 
 
-	#os.rename("train.csv", "train.txt")
+# #clf = AdaBoostClassifier(DecisionTreeClassifier(max_depth = 5),algorithm="SAMME",n_estimators=100)
+# #clf = SVC(kernel = 'poly')
+# #clf = KNeighborsClassifier(n_neighbors = 5)
+# #clf = AdaBoostClassifier()
 
-		
+# 	clf = RandomForestClassifier(n_estimators=10)
+# 	clf.fit(X_train, Y_train) 
+# 	Y_predicted = clf.predict(X_test)
+# 	print (Y_predicted)
+# 	print("accuracy")
+# 	print(accuracy_score(Y_test, Y_predicted))
+# 	print("confusion matrix")
+# 	print (confusion_matrix(Y_test,Y_predicted))
+# 	print("renamed files and all....");
+# 	print(name_array)
+# 	print(len(name_array))
+# #	show_final_result(name_array)
+# 	i = 0
+# 	j = 0
+# 	lc = 0
+# 	counter = 0
+# 	k = 0
+# 	while k < len(name_array):
+# 		edge_candidates = cv2.imread(DestinationFolder+name_array[k]+"_edge_candidates.jpg")
+# 		print("printing",DestinationFolder+name_array[k]+"_edge_candidates.jpg")
+# 		result = edge_candidates.copy()
+# 		while i < edge_candidates.shape[0]:
+# 			j = 0
+# 			while j < edge_candidates.shape[1]:
+# 				if int(edge_label[lc,0])==1:
+# 					result[i,j] = Y_predicted[counter]
+# 					counter = counter + 1
+# 				lc = lc +1
+# 				j = j + 1
+# 			i = i + 1
+# 		k = k +1
+# 		cv2.imwrite(DestinationFolder+name_array[k]+"final_result.jpg",result)
+# 		print("fcuk",k)
 
 
 
-		#print(feature1[500:510,:],feature2[500:510,:],feature3[500:510,:],feature4[500:510,:])
+# 		#print(feature1[500:510,:],feature2[500:510,:],feature3[500:510,:],feature4[500:510,:])
 		
 		# data = np.concatenate((feature1,feature2,feature3,feature4),axis=1)
 		# data = np.float32(data)
@@ -316,11 +374,11 @@ if __name__ == "__main__":
 		# label = np.reshape(label, gray_scale.shape)
 		# y = color[label]
 		# y = np.uint8(y)		
-		# #cv2.imwrite("kmeans.bmp",y)		
+		# #cv2.imwrite("kmeans.jpg",y)		
 		#cv2.waitKey()			
-		#cv2.imwrite(DestinationFolder+file_name_no_extension+"_candidate_exudates.bmp",edge_candidates)		
-		#cv2.imwrite(DestinationFolder+file_name_no_extension+"_result_exudates_kmeans.bmp",y)
-		#cv2.imwrite(DestinationFolder+file_name_no_extension+"_sd_result.bmp",var_fundus)
+		#cv2.imwrite(DestinationFolder+file_name_no_extension+"_candidate_exudates.jpg",edge_candidates)		
+		#cv2.imwrite(DestinationFolder+file_name_no_extension+"_result_exudates_kmeans.jpg",y)
+		#cv2.imwrite(DestinationFolder+file_name_no_extension+"_sd_result.jpg",var_fundus)
 
 # X = np.random.randint(25,50,(25,2))
 # Y = np.random.randint(60,85,(25,2))

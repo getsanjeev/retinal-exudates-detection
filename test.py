@@ -360,6 +360,9 @@ if __name__ == "__main__":
 	from sklearn.ensemble import AdaBoostClassifier
 	from sklearn.tree import DecisionTreeClassifier
 	print("fcuuk")
+
+	os.rename("train.csv","train.txt")
+	os.rename("test.csv","test.txt")
 	dataset_train = np.loadtxt('train.txt', delimiter=",")
 	#dataset_train = pd.read_csv("train.csv")
 	print(dataset_train.shape,"train_shape")

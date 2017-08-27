@@ -41,14 +41,14 @@ def get_DistanceFromOD_data(image, centre):
 		i = i+1
 	return feature_5
 
-def count_ones(image):
+def count_ones(image,value):
 	i = 0
 	j = 0 
 	k = 0
 	while i < image.shape[0]:
 		j = 0
 		while j < image.shape[1]:
-			if int(image[i,j]) == 1 :
+			if int(image[i,j]) == value:
 				k = k+1
 			j = j + 1			
 		i = i+1
@@ -57,33 +57,34 @@ def count_ones(image):
 
 def get_SD_data(sd_image):	
 	feature_1 = np.reshape(sd_image, (sd_image.size,1))
-	print(feature_1.shape)
+	print(feature_1.shape,"feature1")
 	return feature_1
 
 def get_HUE_data(hue_image):	
 	feature_2 = np.reshape(hue_image,(hue_image.size,1))
-	print(feature_2.shape)
+	print(feature_2.shape,"feature2")
 	return feature_2
-
-def get_RED_data(red_channel):	
-	feature_1 = np.reshape(red_channel, (red_channel.size,1))
-	print(feature_1.shape)
-	return feature_1
-
-def get_GREEN_data(green_channel):
-	feature = np.reshape(red_channel, (red_channel.size,1))
-	print(feature.shape)
-	return feature
 
 def get_INTENSITY_data(intensity_image):	
 	feature_3 = np.reshape(intensity_image,(intensity_image.size,1))
-	print(feature_3.shape)
+	print(feature_3.shape,"feature3")
 	return feature_3
 
 def get_EDGE_data(edge_candidates_image):
 	feature_4 = np.reshape(edge_candidates_image,(edge_candidates_image.size,1))
-	print(feature_4.shape)
+	print(feature_4.shape,"feature4")
 	return feature_4
+
+def get_RED_data(red_channel):	
+	feature_5 = np.reshape(red_channel, (red_channel.size,1))
+	print(feature_5.shape,"feature5")
+	return feature_5
+
+def get_GREEN_data(green_channel):
+	feature_6 = np.reshape(green_channel, (green_channel.size,1))
+	print(feature_6.shape,"feature6")
+	return feature_6
+
 
 def line_of_symmetry(image):
 	image_v = image.copy()
@@ -218,61 +219,80 @@ def extract_bv(image):
 
 
 if __name__ == "__main__":
-	pathFolder = "/home/sherlock/Internship@iit/exudate-detection/diaretdb1/"
+	pathFolder = "/home/sherlock/Internship@iit/exudate-detection/training/"
 	filesArray = [x for x in os.listdir(pathFolder) if os.path.isfile(os.path.join(pathFolder,x))]
-	DestinationFolder = "/home/sherlock/Internship@iit/exudate-detection/diaretdb_exudates_kmeans/"
+	DestinationFolder = "/home/sherlock/Internship@iit/exudate-detection/training-results/"
 	LabelFolder = "/home/sherlock/Internship@iit/exudate-detection/diaretdb1-label/"	
 	
 	if not os.path.exists(DestinationFolder):
-		os.mkdir(DestinationFolder)
-	with open('exudate_diaretdb_label.csv', 'a') as csvfile:
-		filewriter = csv.writer(csvfile, delimiter=',',quotechar='|', quoting=csv.QUOTE_MINIMAL)
-		#filewriter.writerow(['fundus','hue','standard_deviation','intensity','distance_from_od','label'])	
-	for file_name in filesArray:
-		print(pathFolder+'/'+file_name)
+		os.mkdir(DestinationFolder)	
+
+	qq = 0
+		
+	for file_name in filesArray:		
 		file_name_no_extension = os.path.splitext(file_name)[0]
+		print(pathFolder+'/'+file_name,"Read this image",file_name_no_extension)
 		fundus1 = cv2.imread(pathFolder+'/'+file_name)
 		fundus = cv2.resize(fundus1,(800,615))
-		b,g,r = cv2.split(fundus)
-		cv2.imwrite(DestinationFolder+file_name_no_extension+"_resized_fundus.jpg",fundus)
+		cv2.imwrite(DestinationFolder+file_name_no_extension+"_resized_fundus.bmp",fundus)				
+		b,g,r = cv2.split(fundus)		
 		hsv_fundus = cv2.cvtColor(fundus,cv2.COLOR_BGR2HSV)
 		h,s,v = cv2.split(hsv_fundus)
 		gray_scale = cv2.cvtColor(fundus,cv2.COLOR_BGR2GRAY)
 		clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
-		contrast_enhanced_fundus = clahe.apply(gray_scale)
+		contrast_enhanced_fundus = clahe.apply(gray_scale)		
 		contrast_enhanced_green_fundus = clahe.apply(g)
+		average_intensity = np.mean(contrast_enhanced_fundus)/255
+		average_hue = np.mean(h)/255
 		#entropy = calculate_entropy(contrast_enhanced_fundus)
 		bv_image = extract_bv(g)
-		cv2.imwrite(DestinationFolder+file_name_no_extension+"_blood_vessels.jpg",bv_image)
+		cv2.imwrite(DestinationFolder+file_name_no_extension+"_blood_vessels.bmp",bv_image)
 		var_fundus = standard_deviation_image(contrast_enhanced_fundus)
 		edge_feature_output = edge_pixel_image(contrast_enhanced_green_fundus,bv_image)
 		#fin_edge = cv2.bitwise_and(edge_candidates,entropy)
 		(cx,cy) = identify_OD_bv_density(bv_image)
 		newfin = cv2.dilate(edge_feature_output, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3)), iterations=1)
-		edge_candidates = cv2.erode(newfin, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3)), iterations=1)
+		edge_candidates = newfin.copy()
 		cv2.circle(edge_candidates,(cx,cy), 100, (0,0,0), -10)
-		edge_label = np.reshape(edge_candidates,(edge_candidates.size,1))/255
+		feature5 = np.reshape(edge_candidates,(edge_candidates.size,1))/255
+		cv2.imwrite(DestinationFolder+file_name_no_extension+"_edge_candidates.bmp",edge_candidates)
+		label_image = cv2.imread(LabelFolder+'/'+file_name_no_extension+"_final_label.bmp")
+		print(LabelFolder+'/'+file_name_no_extension+"_final_label.bmp")
 
 		feature1 = get_SD_data(var_fundus)/255
 		feature2 = get_HUE_data(h)/255
 		feature3 = get_INTENSITY_data(contrast_enhanced_fundus)/255
-		feature4 = get_DistanceFromOD_data(bv_image,(cx,cy))/(var_fundus.shape[0]+var_fundus.shape[1])
-		label_image = cv2.imread(LabelFolder+'/'+file_name_no_extension+"_final_label.jpg")		
-		b,gg,r = cv2.split(label_image)		
-		label = np.reshape(gg,(gg.size,1))/255
-		print(gg[500:520,0:0])
-		co = count_ones(gg)
-		print("no fo exudates",co)
-		with open('exudate_diaretdb_label.csv', 'a') as csvfile:
+		feature4 = get_EDGE_data(edge_candidates)/255
+		feature5 = get_RED_data(r)/255
+		feature6 = get_GREEN_data(g)/255
+		feature7 = get_DistanceFromOD_data(bv_image,(cx,cy))/(var_fundus.shape[0]+var_fundus.shape[1])		
+		print("shape of",label_image.shape)
+		label = np.reshape(label_image,(label_image.size,1))/255					
+		co3 = count_ones(edge_candidates,255)
+		print(co3,"check me")			
+		temp = 0
+		counter = 0
+		this_image_rows = 0
+		with open('train.csv', 'a') as csvfile:
 			filewriter = csv.writer(csvfile, delimiter=',',quotechar='|', quoting=csv.QUOTE_MINIMAL)
-			for counter in range(0,feature1.shape[0]):
-				if (edge_label[counter,0] == 1):
-					filewriter.writerow([feature1[counter,0],feature2[counter,0],feature3[counter,0],feature4[counter,0],int(label[counter,0])])
-		print("-----------x-------DONE-------x----------")	
+			while counter < feature1.shape[0]:
+				if feature4[counter,0] == 1:
+					qq = qq + 1
+					temp = counter
+					this_image_rows = this_image_rows+1
+					filewriter.writerow([feature1[counter,0],feature2[counter,0],feature3[counter,0],feature5[counter,0],feature6[counter,0],feature7[counter,0],average_intensity,average_hue,int(label[counter,0])])					
+				counter = counter + 1
+
+		print("-----------x-------DONE-------x----------")
+		print(feature1[temp,0],feature2[temp,0],feature3[temp,0],feature5[temp,0],feature6[temp,0],feature7[temp,0],average_intensity,average_hue,int(label[temp,0]))
+		print("no of rows addded : ", this_image_rows)
+
+	print("no of pixxels in total", qq)
 
 
+	#os.rename("train.csv", "train.txt")
 
-
+		
 
 
 
@@ -295,11 +315,11 @@ if __name__ == "__main__":
 		# label = np.reshape(label, gray_scale.shape)
 		# y = color[label]
 		# y = np.uint8(y)		
-		# #cv2.imwrite("kmeans.jpg",y)		
+		# #cv2.imwrite("kmeans.bmp",y)		
 		#cv2.waitKey()			
-		#cv2.imwrite(DestinationFolder+file_name_no_extension+"_candidate_exudates.jpg",edge_candidates)		
-		#cv2.imwrite(DestinationFolder+file_name_no_extension+"_result_exudates_kmeans.jpg",y)
-		#cv2.imwrite(DestinationFolder+file_name_no_extension+"_sd_result.jpg",var_fundus)
+		#cv2.imwrite(DestinationFolder+file_name_no_extension+"_candidate_exudates.bmp",edge_candidates)		
+		#cv2.imwrite(DestinationFolder+file_name_no_extension+"_result_exudates_kmeans.bmp",y)
+		#cv2.imwrite(DestinationFolder+file_name_no_extension+"_sd_result.bmp",var_fundus)
 
 # X = np.random.randint(25,50,(25,2))
 # Y = np.random.randint(60,85,(25,2))
