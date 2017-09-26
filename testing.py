@@ -137,6 +137,36 @@ def count_ones(image,value):
 	return k
 
 
+def get_average_intensity(green_channel):
+	average_intensity = green_channel.copy()
+	i = 0
+	j = 0
+	while i < green_channel.shape[0]:
+		j = 0
+		while j < green_channel.shape[1]:
+			sub_image = green_channel[i:i+20,j:j+25]
+			mean = np.mean(sub_image)
+			average_intensity[i:i+20,j:j+25] = mean
+			j = j+25
+		i = i+20
+	result = np.reshape(average_intensity, (average_intensity.size,1))
+	return result
+
+def get_average_hue(hue_image):
+	average_hue = hue_image.copy()
+	i = 0
+	j = 0
+	while i < hue_image.shape[0]:
+		j = 0
+		while j < hue_image.shape[1]:
+			sub_image = hue_image[i:i+20,j:j+25]
+			mean = np.mean(sub_image)
+			average_hue[i:i+20,j:j+25] = mean
+			j = j+25
+		i = i+20
+	result = np.reshape(average_hue, (average_hue.size,1))
+	return result
+
 def get_SD_data(sd_image):	
 	feature_1 = np.reshape(sd_image, (sd_image.size,1))
 	print(feature_1.shape,"feature1")
@@ -325,8 +355,8 @@ if __name__ == "__main__":
 		clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
 		contrast_enhanced_fundus = clahe.apply(gray_scale)		
 		contrast_enhanced_green_fundus = clahe.apply(g)
-		average_intensity = np.mean(contrast_enhanced_fundus)/255
-		average_hue = np.mean(h)/255
+		average_intensity = get_average_intensity(contrast_enhanced_green_fundus)/255
+		average_hue = get_average_hue(h)/255
 		#entropy = calculate_entropy(contrast_enhanced_fundus)
 		bv_image = extract_bv(g)
 		cv2.imwrite(DestinationFolder+file_name_no_extension+"_blood_vessels.bmp",bv_image)
@@ -334,7 +364,7 @@ if __name__ == "__main__":
 		edge_feature_output = edge_pixel_image(contrast_enhanced_green_fundus,bv_image)
 		#fin_edge = cv2.bitwise_and(edge_candidates,entropy)
 		(cx,cy) = identify_OD_bv_density(bv_image)
-		newfin = cv2.dilate(edge_feature_output, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3)), iterations=1)
+		newfin = cv2.dilate(edge_feature_output, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(5,5)), iterations=1)
 		edge_candidates = newfin.copy()
 		edge_candidates = cv2.circle(edge_candidates,(cx,cy), 100, (0,0,0), -10)
 
@@ -366,12 +396,12 @@ if __name__ == "__main__":
 					qq = qq + 1
 					temp = counter
 					this_image_rows = this_image_rows+1
-					filewriter.writerow([feature1[counter,0],feature2[counter,0],feature3[counter,0],feature5[counter,0],feature6[counter,0],feature7[counter,0],average_intensity,average_hue,int(label[counter,0])])
+					filewriter.writerow([feature1[counter,0],feature2[counter,0],feature3[counter,0],feature5[counter,0],feature6[counter,0],average_intensity[counter,0],average_hue[counter,0],int(label[counter,0])])
 					#filewriter.writerow([feature1[counter,0],feature2[counter,0],feature3[counter,0],int(label[counter,0])])					
 				counter = counter +1
 		
 		#print(feature1[temp,0],feature2[temp,0],feature3[temp,0],int(label[temp,0]))
-		print(feature1[temp,0],feature2[temp,0],feature3[temp,0],feature5[temp,0],feature6[temp,0],feature7[temp,0],average_intensity,average_hue,int(label[temp,0]))
+		print(feature1[temp,0],feature2[temp,0],feature3[temp,0],feature5[temp,0],feature6[temp,0],average_intensity[temp,0],average_hue[temp,0],int(label[temp,0]))
 		print("no of rows addded : ", this_image_rows)
 		print("-----------x-------DONE-------x----------")
 
@@ -400,13 +430,13 @@ if __name__ == "__main__":
 	#dataset_test = pd.read_csv("test.csv")
 	print(dataset_test.shape,"test_shape")
 
-	X_train = dataset_train[:,0:7]
-	Y_train = dataset_train[:,8]
+	X_train = dataset_train[:,0:6]
+	Y_train = dataset_train[:,7]
 
 	print(dataset_train[50:55,3])
 
-	X_test = dataset_test[:,0:7]
-	Y_test = dataset_test[:,8]
+	X_test = dataset_test[:,0:6]
+	Y_test = dataset_test[:,7]
 
 
 
@@ -418,17 +448,53 @@ if __name__ == "__main__":
 	#clf = KNeighborsClassifier(n_neighbors = 5)
 	#clf = AdaBoostClassifier()
 
-	clf = RandomForestClassifier(n_estimators=10)
-	clf.fit(X_train, Y_train) 
+	# clf = RandomForestClassifier(n_estimators=10)
+	# clf.fit(X_train, Y_train) 
 
+	# Y_predicted = clf.predict(X_test)
+	# print (Y_predicted)
+
+	# print("accuracy")
+	# print(accuracy_score(Y_test, Y_predicted))
+
+	# print("confusion matrix")
+	# print (confusion_matrix(Y_test,Y_predicted))
+	from collections import Counter
+	print("initially unbalanced classes : ")
+	print(sorted(Counter(Y_train).items()))
+	from imblearn.over_sampling import RandomOverSampler
+	ros = RandomOverSampler(random_state=0)
+	X_resampled, Y_resampled = ros.fit_sample(X_train, Y_train)	
+	print("when balanced classes : ")
+	print(sorted(Counter(Y_resampled).items()))
+
+	print("svc")
+	from sklearn.svm import LinearSVC
+	clf = LinearSVC()
+	clf.fit(X_resampled, Y_resampled)
 	Y_predicted = clf.predict(X_test)
-	print (Y_predicted)
+	print(accuracy_score(Y_test, Y_predicted),"accuracy")
+	print (confusion_matrix(Y_test,Y_predicted),"confusion matrix")
 
-	print("accuracy")
-	print(accuracy_score(Y_test, Y_predicted))
 
-	print("confusion matrix")
-	print (confusion_matrix(Y_test,Y_predicted))
+	print("adaboost")
+	clf = AdaBoostClassifier()
+	clf.fit(X_resampled, Y_resampled)
+	Y_predicted = clf.predict(X_test)
+	print(accuracy_score(Y_test, Y_predicted),"accuracy")
+	print (confusion_matrix(Y_test,Y_predicted),"confusion matrix")
+
+	print("randomforest")
+	clf = RandomForestClassifier(n_estimators=10)
+	clf.fit(X_resampled, Y_resampled)
+	Y_predicted = clf.predict(X_test)
+	print(accuracy_score(Y_test, Y_predicted),"accuracy")
+	print (confusion_matrix(Y_test,Y_predicted),"confusion matrix")
+
+
+
+
+
 	
 	resultFolder = "/home/sherlock/Internship@iit/exudate-detection/results-exudates/"		
 

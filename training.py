@@ -55,6 +55,37 @@ def count_ones(image,value):
 	return k
 
 
+def get_average_intensity(green_channel):
+	average_intensity = green_channel.copy()
+	i = 0
+	j = 0
+	while i < green_channel.shape[0]:
+		j = 0
+		while j < green_channel.shape[1]:
+			sub_image = green_channel[i:i+20,j:j+25]
+			mean = np.mean(sub_image)
+			average_intensity[i:i+20,j:j+25] = mean
+			j = j+25
+		i = i+20
+	result = np.reshape(average_intensity, (average_intensity.size,1))
+	return result
+
+def get_average_hue(hue_image):
+	average_hue = hue_image.copy()
+	i = 0
+	j = 0
+	while i < hue_image.shape[0]:
+		j = 0
+		while j < hue_image.shape[1]:
+			sub_image = hue_image[i:i+20,j:j+25]
+			mean = np.mean(sub_image)
+			average_hue[i:i+20,j:j+25] = mean
+			j = j+25
+		i = i+20
+	result = np.reshape(average_hue, (average_hue.size,1))
+	return result
+
+
 def get_SD_data(sd_image):	
 	feature_1 = np.reshape(sd_image, (sd_image.size,1))
 	print(feature_1.shape,"feature1")
@@ -242,8 +273,9 @@ if __name__ == "__main__":
 		clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
 		contrast_enhanced_fundus = clahe.apply(gray_scale)		
 		contrast_enhanced_green_fundus = clahe.apply(g)
-		average_intensity = np.mean(contrast_enhanced_fundus)/255
-		average_hue = np.mean(h)/255
+		average_intensity = get_average_intensity(contrast_enhanced_green_fundus)/255
+		average_hue = get_average_hue(h)/255
+		print("shape hue",average_hue.shape,"shape intensity",average_intensity.shape)
 		#entropy = calculate_entropy(contrast_enhanced_fundus)
 		bv_image = extract_bv(g)
 		cv2.imwrite(DestinationFolder+file_name_no_extension+"_blood_vessels.bmp",bv_image)
@@ -251,7 +283,7 @@ if __name__ == "__main__":
 		edge_feature_output = edge_pixel_image(contrast_enhanced_green_fundus,bv_image)
 		#fin_edge = cv2.bitwise_and(edge_candidates,entropy)
 		(cx,cy) = identify_OD_bv_density(bv_image)
-		newfin = cv2.dilate(edge_feature_output, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3)), iterations=1)
+		newfin = cv2.dilate(edge_feature_output, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(5,5)), iterations=1)
 		edge_candidates = newfin.copy()
 		cv2.circle(edge_candidates,(cx,cy), 100, (0,0,0), -10)
 		feature5 = np.reshape(edge_candidates,(edge_candidates.size,1))/255
@@ -265,7 +297,7 @@ if __name__ == "__main__":
 		feature4 = get_EDGE_data(edge_candidates)/255
 		feature5 = get_RED_data(r)/255
 		feature6 = get_GREEN_data(g)/255
-		feature7 = get_DistanceFromOD_data(bv_image,(cx,cy))/(var_fundus.shape[0]+var_fundus.shape[1])		
+		feature7 = get_DistanceFromOD_data(bv_image,(cx,cy))/(var_fundus.shape[0]+var_fundus.shape[1])
 		print("shape of",label_image.shape)
 		b,gg,r = cv2.split(label_image)
 		label = np.reshape(gg,(gg.size,1))/255		
@@ -283,12 +315,12 @@ if __name__ == "__main__":
 					qq = qq + 1
 					temp = counter
 					this_image_rows = this_image_rows+1
-					filewriter.writerow([feature1[counter,0],feature2[counter,0],feature3[counter,0],feature5[counter,0],feature6[counter,0],feature7[counter,0],average_intensity,average_hue,int(label[counter,0])])
+					filewriter.writerow([feature1[counter,0],feature2[counter,0],feature3[counter,0],feature5[counter,0],feature6[counter,0],average_intensity[counter,0],average_hue[counter,0],int(label[counter,0])])
 					#filewriter.writerow([feature1[counter,0],feature2[counter,0],feature3[counter,0],int(label[counter,0])])					
 				counter = counter + 1
 
 		print("-----------x-------DONE-------x----------")
-		print(feature1[temp,0],feature2[temp,0],feature3[temp,0],feature5[temp,0],feature6[temp,0],feature7[temp,0],average_intensity,average_hue,int(label[temp,0]))
+		print(feature1[temp,0],feature2[temp,0],feature3[temp,0],feature5[temp,0],feature6[temp,0],average_intensity[temp,0],average_hue[temp,0],int(label[temp,0]))
 		#print(feature1[temp,0],feature2[temp,0],feature3[temp,0],int(label[temp,0]))
 		print("no of rows addded : ", this_image_rows)
 
