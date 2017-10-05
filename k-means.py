@@ -45,6 +45,11 @@ def get_HUE_data(hue_image):
 	print(feature_2.shape)
 	return feature_2
 
+def get_saturation_data(s_image):
+	feature = np.reshape(s_image,(s.size,1))
+	print(feature.shape)
+	return feature
+
 def get_INTENSITY_data(intensity_image):
 	feature_3 = np.reshape(intensity_image,(intensity_image.size,1))
 	print(feature_3.shape)
@@ -189,9 +194,9 @@ def extract_bv(image):
 
 
 if __name__ == "__main__":
-	pathFolder = "/home/sherlock/Internship@iit/exudate-detection/testing/"
+	pathFolder = "/home/sherlock/Internship@iit/exudate-detection/training/"
 	filesArray = [x for x in os.listdir(pathFolder) if os.path.isfile(os.path.join(pathFolder,x))]
-	DestinationFolder = "/home/sherlock/Internship@iit/exudate-detection/testing-results-kmeans/"
+	DestinationFolder = "/home/sherlock/Internship@iit/exudate-detection/training-results-kmeans/"
 	
 	if not os.path.exists(DestinationFolder):
 		os.mkdir(DestinationFolder)	
@@ -199,8 +204,9 @@ if __name__ == "__main__":
 		print(pathFolder+'/'+file_name)		
 		file_name_no_extension = os.path.splitext(file_name)[0]
 		fundus = cv2.imread(pathFolder+'/'+file_name)
+		#fundus = cv2.imread("image016.png")
 		hsv_fundus = cv2.cvtColor(fundus,cv2.COLOR_BGR2HSV)
-		h,s,v = cv2.split(hsv_fundus)
+		h,s,v = cv2.split(hsv_fundus)	
 		gray_scale = cv2.cvtColor(fundus,cv2.COLOR_BGR2GRAY)
 		clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
 		contrast_enhanced_fundus = clahe.apply(gray_scale)
@@ -216,8 +222,9 @@ if __name__ == "__main__":
 		cv2.circle(edge_candidates,(cx,cy), 100, (0,0,0), -10)
 
 		feature1 = get_SD_data(var_fundus)/255
-		feature2 = get_HUE_data(h)/255
-		feature3 = get_INTENSITY_data(contrast_enhanced_fundus)/255
+		feature2 = get_HUE_data(h)/255		
+		feature3 = get_saturation_data(s)/255
+		feature4 = get_INTENSITY_data(v)/255
 		Z = np.hstack((feature2,feature3))
 		Z = np.float32(Z)
 		#feature5 = get_DistanceFromOD_data(center)
@@ -231,15 +238,31 @@ if __name__ == "__main__":
 		#data = np.concatenate((feature2),axis=1)	
 		#data = np.float32(data)
 		#feature2 = np.float32(feature2)
+
 		criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 50, 0.01)
 		ret,label,center=cv2.kmeans(Z,5,None,criteria,50,cv2.KMEANS_RANDOM_CENTERS)
-		print(center)
+		print(center)	
+		center_t = [(t[0]*255,t[1]*255) for t in center]
+		print(center_t,"centre relevant to me")
+
+		ex_color = (40,230)
+		distance = [(abs(t[0]-ex_color[0])+ abs(t[1]-ex_color[1]),t) for t in center_t]
+		print("distance : ")
+		print(distance)
+		print(min(distance))
+		print(distance.index((min(distance))))
+
+		u, indices = np.unique(label, return_index=True)
+		print(u)		
 
 		green = [0,255,0]
 		blue = [255,0,0]
 		red = [0,0,255]
 		white = [255,255,255]
 		black = [0,0,0]
+		pink = [220,30,210]
+		sky = [30,240,230]
+		yellow = [230,230,30]
 
 		color = [white,black,red,green,blue]
 		color = np.array(color,np.uint8)
@@ -250,7 +273,7 @@ if __name__ == "__main__":
 		print("-----------x-------DONE-------x----------")
 		#cv2.waitKey()			
 		cv2.imwrite(DestinationFolder+file_name_no_extension+"_candidate_exudates.jpg",edge_candidates)		
-		cv2.imwrite(DestinationFolder+file_name_no_extension+"_result_exudates_kmeans.jpg",y)
+		cv2.imwrite(DestinationFolder+file_name_no_extension+"_result_exudates_kmeans.jpg",y)				
 		#cv2.imwrite(DestinationFolder+file_name_no_extension+"_sd_result.jpg",var_fundus)
 
 # X = np.random.randint(25,50,(25,2))
@@ -271,6 +294,7 @@ if __name__ == "__main__":
 # # Plot the data
 # plt.scatter(A[:,0],A[:,1])
 # plt.scatter(B[:,0],B[:,1],c = 'r')
-# plt.scatter(center[:,0],center[:,1],s = 80,c = 'y', marker = 's')
+# plt.scatter(cente
+#r[:,0],center[:,1],s = 80,c = 'y', marker = 's')
 # plt.xlabel('Height'),plt.ylabel('Weight')
 # plt.show()
