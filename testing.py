@@ -348,10 +348,8 @@ if __name__ == "__main__":
 		cv2.imwrite(DestinationFolder+file_name_no_extension+"_blood_vessels.bmp",bv_image_dash)
 		var_fundus = standard_deviation_image(contrast_enhanced_fundus)
 		edge_feature_output = edge_pixel_image(gray_scale,bv_image)
-		(cx,cy) = identify_OD_bv_density(bv_image)
 		newfin = cv2.dilate(edge_feature_output, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(5,5)), iterations=1)
 		edge_candidates = cv2.erode(newfin, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3)), iterations=1)
-		cv2.circle(edge_candidates,(cx,cy), 100, (0,0,0), -10)
 		edge_candidates = np.uint8(edge_candidates)
 
 		#fin_edge = cv2.bitwise_and(edge_candidates,entropy)		
@@ -368,7 +366,7 @@ if __name__ == "__main__":
 		feature4 = get_INTENSITY_data(contrast_enhanced_fundus)/255
 		feature5 = get_RED_data(r)/255
 		feature6 = get_GREEN_data(g)/255
-		feature7 = get_DistanceFromOD_data(bv_image,(cx,cy))/(var_fundus.shape[0]+var_fundus.shape[1])
+		#feature7 = get_DistanceFromOD_data(bv_image,(cx,cy))/(var_fundus.shape[0]+var_fundus.shape[1])
 
 
 		Z = np.hstack((feature2,feature3))	#HUE and SATURATION
@@ -435,10 +433,15 @@ if __name__ == "__main__":
 		cv2.imwrite(DestinationFolder+file_name_no_extension+"_result_exudates_kmeans.bmp",y)	
 		cv2.imwrite(DestinationFolder+file_name_no_extension+"_test_result.bmp",test)
 		cv2.imwrite(DestinationFolder+file_name_no_extension+"_test2_result.bmp",test2)		
-		final_candidates = np.bitwise_or(edge_candidates,res_from_clustering)	
+		final_candidates = np.bitwise_or(edge_candidates,res_from_clustering)
+		(cx,cy) = identify_OD_bv_density(bv_image_dash)
+		cv2.circle(final_candidates,(cx,cy), 100, (0,0,0), -10)
+		maskk = cv2.imread("MASK.bmp")
+		final_candidates = np.bitwise_and(final_candidates,maskk[:,:,0])
 		cv2.imwrite(DestinationFolder+file_name_no_extension+"_final_candidates.bmp",final_candidates)
 		
-		candidates_vector = np.reshape(final_candidates,(final_candidates.size,1))/255
+		
+		candidates_vector = np.reshape(final_candidates,(final_candidates.size,1))/255		
 		print(final_candidates.shape,"SHAPE OF FINAL CANDIDATE")		
 		
 		b,gg,r = cv2.split(label_image)
