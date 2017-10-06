@@ -194,9 +194,9 @@ def extract_bv(image):
 
 
 if __name__ == "__main__":
-	pathFolder = "/home/sherlock/Internship@iit/exudate-detection/testing/"
+	pathFolder = "/home/sherlock/Internship@iit/exudate-detection/training/"
 	filesArray = [x for x in os.listdir(pathFolder) if os.path.isfile(os.path.join(pathFolder,x))]
-	DestinationFolder = "/home/sherlock/Internship@iit/exudate-detection/testing-result-kmeans/"
+	DestinationFolder = "/home/sherlock/Internship@iit/exudate-detection/training-result-kmeans/"
 	
 	if not os.path.exists(DestinationFolder):
 		os.mkdir(DestinationFolder)	
@@ -250,29 +250,40 @@ if __name__ == "__main__":
 		criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 50, 0.01)
 		ret,label,center=cv2.kmeans(Z,6,None,criteria,50,cv2.KMEANS_RANDOM_CENTERS)
 		print(center)	
-		center_t = [(t[0]*255,t[1]*255) for t in center]
-		print(center_t,"centre relevant to me")
 
+		u, indices, counts = np.unique(label, return_index=True, return_counts=True)		
+		print(u,"unique labels in Clustered image")		
+		print(counts,"count of labels in Clustered image")
+		
+
+		center_t = [(t[0]*255,t[1]*255) for t in center]
+		#print(center_t,"centre relevant to me")
+
+		#print("total area : ",gray_scale.shape[0]*gray_scale.shape[1])
 		ex_color = (40,230)
-		distance = [(abs(t[0]- ex_color[0]),t) for t in center_t]
-		print("distance : ")
-		print(distance)
-		print(min(distance))
-		print(distance.index((min(distance))))
+		distance = [(abs(t[0]- ex_color[0]),t) for t in center_t]		
+		#print("distance : ")
+		#print(distance)
+		#print(min(distance))
+		print(distance.index((min(distance))),"index label in test1")
+		print("count of my selected - Channel 1:",counts[distance.index((min(distance)))])
+		index1 = distance.index((min(distance)))
+		if counts[distance.index((min(distance)))] > 0.3*gray_scale.shape[0]*gray_scale.shape[1]:
+			index1 = -1		
+
 
 		distance2 = [(abs(t[0]- ex_color[0])+abs(t[1]-ex_color[1]),t) for t in center_t]
-		distance
+		print("count of my selected - Channel 2:",counts[distance2.index((min(distance2)))])
 		print("distance2 : ")
 		print(distance2)
 		print(distance2.index((min(distance2))))
-		index = -1
+		index2 = -1
 		print(min(distance2)[0],"minimum deviation from exact exudates is : ")
 		if min(distance2)[0] <=25:
-			index = distance2.index((min(distance2)))		
+			index2 = distance2.index((min(distance2)))		
+		if counts[distance2.index((min(distance2)))] > 0.3*gray_scale.shape[0]*gray_scale.shape[1]:
+			index2 = -1
 
-		u, indices, counts = np.unique(label, return_index=True, return_counts=True)
-		print(u)		
-		print(counts)
 
 		green = [0,255,0]
 		blue = [255,0,0]
@@ -286,27 +297,45 @@ if __name__ == "__main__":
 		color = [white,black,red,green,blue,pink]
 		color = np.array(color,np.uint8)
 		label = np.reshape(label, gray_scale.shape)
-		test = label.copy()
-		print(test)
-		test[test!=distance.index((min(distance)))] = -1
-		test[test==distance.index((min(distance)))] = 255
-		test[test==-1] = 0
+
+
+		test = label.copy()		
+		if index1 == -1:
+			test.fill(0)
+		else:
+			test[test!=distance.index((min(distance)))] = -1
+			test[test==distance.index((min(distance)))] = 255
+			test[test==-1] = 0
 
 		test2 = label.copy()
-		if index == -1:
+		if index2 == -1:
 			test2.fill(0)
 		else:
-			test2[test2!=index] = -1
-			test2[test2==index] = 255
+			test2[test2!=index2] = -1
+			test2[test2==index2] = 255
 			test2[test2==-1] = 0
+	
 
 		y = color[label]
 		y = np.uint8(y)
 		#cv2.imwrite("kmeans.jpg",y)
+		print("-----------x---------------- UNIQUESNESS TEST--------------x----------------")
+		u, indices, counts = np.unique(test, return_index=True, return_counts=True)
+		print(u)
+		print(counts)
+		u, indices, counts = np.unique(test2, return_index=True, return_counts=True)		
+		print(u)
+		print(counts)
+		u, indices, counts = np.unique(edge_candidates, return_index=True, return_counts=True)		
+		print(u)
+		print(counts)
+		
 		res_from_clustering = np.bitwise_or(test2,test)
+		u, indices, counts = np.unique(res_from_clustering, return_index=True, return_counts=True)		
+		print(u)
+		print(counts)
 		#print(np.unique(res_from_clustering),"unique in t 1 t2")
-		#cv2.imwrite(DestinationFolder+file_name_no_extension+"_cluster_res.bmp",res_from_clustering)
-		print("-----------x-------DONE-------x----------")
+		#cv2.imwrite(DestinationFolder+file_name_no_extension+"_cluster_res.bmp",res_from_clustering)		
 		#cv2.waitKey()			
 		cv2.imwrite(DestinationFolder+file_name_no_extension+"_candidate_exudates.bmp",edge_candidates)		
 		cv2.imwrite(DestinationFolder+file_name_no_extension+"_result_exudates_kmeans.bmp",y)				
@@ -314,8 +343,10 @@ if __name__ == "__main__":
 		cv2.imwrite(DestinationFolder+file_name_no_extension+"_test2_result.bmp",test2)
 		print(edge_candidates.shape,res_from_clustering.shape)
 		final_candidates = np.bitwise_or(edge_candidates,res_from_clustering)
-		print(np.unique(final_candidates))		
+		print(np.unique(final_candidates, return_index=True, return_counts=True)		)		
 		cv2.imwrite(DestinationFolder+file_name_no_extension+"_final_candidates.bmp",final_candidates)
+
+		print("-----------x-------DONE-------x----------")
 
 # X = np.random.randint(25,50,(25,2))
 # Y = np.random.randint(60,85,(25,2))
