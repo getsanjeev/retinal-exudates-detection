@@ -194,9 +194,9 @@ def extract_bv(image):
 
 
 if __name__ == "__main__":
-	pathFolder = "/home/sherlock/Internship@iit/exudate-detection/training/"
+	pathFolder = "/home/sherlock/Internship@iit/exudate-detection/testing/"
 	filesArray = [x for x in os.listdir(pathFolder) if os.path.isfile(os.path.join(pathFolder,x))]
-	DestinationFolder = "/home/sherlock/Internship@iit/exudate-detection/training-resultsHS6-kmeans/"
+	DestinationFolder = "/home/sherlock/Internship@iit/exudate-detection/testing-result-kmeans/"
 	
 	if not os.path.exists(DestinationFolder):
 		os.mkdir(DestinationFolder)	
@@ -227,6 +227,7 @@ if __name__ == "__main__":
 		newfin = cv2.dilate(edge_feature_output, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(5,5)), iterations=1)
 		edge_candidates = cv2.erode(newfin, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3)), iterations=1)
 		cv2.circle(edge_candidates,(cx,cy), 100, (0,0,0), -10)
+		edge_candidates = np.uint8(edge_candidates)
 
 		feature1 = get_SD_data(var_fundus)/255
 		feature2 = get_HUE_data(h)/255		
@@ -293,7 +294,7 @@ if __name__ == "__main__":
 
 		test2 = label.copy()
 		if index == -1:
-			test2.fill(255)
+			test2.fill(0)
 		else:
 			test2[test2!=index] = -1
 			test2[test2==index] = 255
@@ -302,12 +303,19 @@ if __name__ == "__main__":
 		y = color[label]
 		y = np.uint8(y)
 		#cv2.imwrite("kmeans.jpg",y)
+		res_from_clustering = np.bitwise_or(test2,test)
+		#print(np.unique(res_from_clustering),"unique in t 1 t2")
+		#cv2.imwrite(DestinationFolder+file_name_no_extension+"_cluster_res.bmp",res_from_clustering)
 		print("-----------x-------DONE-------x----------")
 		#cv2.waitKey()			
 		cv2.imwrite(DestinationFolder+file_name_no_extension+"_candidate_exudates.bmp",edge_candidates)		
 		cv2.imwrite(DestinationFolder+file_name_no_extension+"_result_exudates_kmeans.bmp",y)				
 		cv2.imwrite(DestinationFolder+file_name_no_extension+"_test_result.bmp",test)
 		cv2.imwrite(DestinationFolder+file_name_no_extension+"_test2_result.bmp",test2)
+		print(edge_candidates.shape,res_from_clustering.shape)
+		final_candidates = np.bitwise_or(edge_candidates,res_from_clustering)
+		print(np.unique(final_candidates))		
+		cv2.imwrite(DestinationFolder+file_name_no_extension+"_final_candidates.bmp",final_candidates)
 
 # X = np.random.randint(25,50,(25,2))
 # Y = np.random.randint(60,85,(25,2))
