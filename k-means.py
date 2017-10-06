@@ -196,7 +196,7 @@ def extract_bv(image):
 if __name__ == "__main__":
 	pathFolder = "/home/sherlock/Internship@iit/exudate-detection/training/"
 	filesArray = [x for x in os.listdir(pathFolder) if os.path.isfile(os.path.join(pathFolder,x))]
-	DestinationFolder = "/home/sherlock/Internship@iit/exudate-detection/training-results-kmeans/"
+	DestinationFolder = "/home/sherlock/Internship@iit/exudate-detection/training-resultsHS6-kmeans/"
 	
 	if not os.path.exists(DestinationFolder):
 		os.mkdir(DestinationFolder)	
@@ -204,10 +204,17 @@ if __name__ == "__main__":
 		print(pathFolder+'/'+file_name)		
 		file_name_no_extension = os.path.splitext(file_name)[0]
 		fundus = cv2.imread(pathFolder+'/'+file_name)
-		#fundus = cv2.imread("image016.png")
-		hsv_fundus = cv2.cvtColor(fundus,cv2.COLOR_BGR2HSV)
+		fundus = cv2.resize(fundus,(800,615))
+		fundus_mask = cv2.imread(pathFolder+'/'+"fmask.tif")
+		fundus_mask = cv2.resize(fundus_mask,(800,615))
+
+		f1 = cv2.bitwise_and(fundus[:,:,0],fundus_mask[:,:,0])
+		f2 = cv2.bitwise_and(fundus[:,:,1],fundus_mask[:,:,1])
+		f3 = cv2.bitwise_and(fundus[:,:,2],fundus_mask[:,:,2])
+		fundus_dash = cv2.merge((f1,f2,f3))		
+		hsv_fundus = cv2.cvtColor(fundus_dash,cv2.COLOR_BGR2HSV)
 		h,s,v = cv2.split(hsv_fundus)	
-		gray_scale = cv2.cvtColor(fundus,cv2.COLOR_BGR2GRAY)
+		gray_scale = cv2.cvtColor(fundus_dash,cv2.COLOR_BGR2GRAY)
 		clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
 		contrast_enhanced_fundus = clahe.apply(gray_scale)
 		#entropy = calculate_entropy(contrast_enhanced_fundus)
@@ -240,20 +247,31 @@ if __name__ == "__main__":
 		#feature2 = np.float32(feature2)
 
 		criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 50, 0.01)
-		ret,label,center=cv2.kmeans(Z,5,None,criteria,50,cv2.KMEANS_RANDOM_CENTERS)
+		ret,label,center=cv2.kmeans(Z,6,None,criteria,50,cv2.KMEANS_RANDOM_CENTERS)
 		print(center)	
 		center_t = [(t[0]*255,t[1]*255) for t in center]
 		print(center_t,"centre relevant to me")
 
 		ex_color = (40,230)
-		distance = [(abs(t[0]-ex_color[0])+ abs(t[1]-ex_color[1]),t) for t in center_t]
+		distance = [(abs(t[0]- ex_color[0]),t) for t in center_t]
 		print("distance : ")
 		print(distance)
 		print(min(distance))
 		print(distance.index((min(distance))))
 
-		u, indices = np.unique(label, return_index=True)
+		distance2 = [(abs(t[0]- ex_color[0])+abs(t[1]-ex_color[1]),t) for t in center_t]
+		distance
+		print("distance2 : ")
+		print(distance2)
+		print(distance2.index((min(distance2))))
+		index = -1
+		print(min(distance2)[0],"minimum deviation from exact exudates is : ")
+		if min(distance2)[0] <=25:
+			index = distance2.index((min(distance2)))		
+
+		u, indices, counts = np.unique(label, return_index=True, return_counts=True)
 		print(u)		
+		print(counts)
 
 		green = [0,255,0]
 		blue = [255,0,0]
@@ -264,17 +282,32 @@ if __name__ == "__main__":
 		sky = [30,240,230]
 		yellow = [230,230,30]
 
-		color = [white,black,red,green,blue]
+		color = [white,black,red,green,blue,pink]
 		color = np.array(color,np.uint8)
 		label = np.reshape(label, gray_scale.shape)
+		test = label.copy()
+		print(test)
+		test[test!=distance.index((min(distance)))] = -1
+		test[test==distance.index((min(distance)))] = 255
+		test[test==-1] = 0
+
+		test2 = label.copy()
+		if index == -1:
+			test2.fill(255)
+		else:
+			test2[test2!=index] = -1
+			test2[test2==index] = 255
+			test2[test2==-1] = 0
+
 		y = color[label]
 		y = np.uint8(y)
 		#cv2.imwrite("kmeans.jpg",y)
 		print("-----------x-------DONE-------x----------")
 		#cv2.waitKey()			
-		cv2.imwrite(DestinationFolder+file_name_no_extension+"_candidate_exudates.jpg",edge_candidates)		
-		cv2.imwrite(DestinationFolder+file_name_no_extension+"_result_exudates_kmeans.jpg",y)				
-		#cv2.imwrite(DestinationFolder+file_name_no_extension+"_sd_result.jpg",var_fundus)
+		cv2.imwrite(DestinationFolder+file_name_no_extension+"_candidate_exudates.bmp",edge_candidates)		
+		cv2.imwrite(DestinationFolder+file_name_no_extension+"_result_exudates_kmeans.bmp",y)				
+		cv2.imwrite(DestinationFolder+file_name_no_extension+"_test_result.bmp",test)
+		cv2.imwrite(DestinationFolder+file_name_no_extension+"_test2_result.bmp",test2)
 
 # X = np.random.randint(25,50,(25,2))
 # Y = np.random.randint(60,85,(25,2))
