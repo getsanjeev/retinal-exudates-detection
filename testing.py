@@ -6,16 +6,6 @@ from matplotlib import pyplot as plt
 import math
 import csv
 from sklearn import preprocessing
-import numpy as np
-from sklearn import preprocessing
-import random
-from sklearn.metrics import confusion_matrix
-from sklearn.svm import SVC
-from sklearn.metrics import accuracy_score
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.ensemble import AdaBoostClassifier
-from sklearn.tree import DecisionTreeClassifier
 
 
 def writeResults(DestinationFolder,resultFolder,name_array,classifier,Y_predicted):
@@ -27,8 +17,8 @@ def writeResults(DestinationFolder,resultFolder,name_array,classifier,Y_predicte
 	j = 0
 	lc = 0
 	while size_m < len(name_array):
-		current = cv2.imread(DestinationFolder+name_array[size_m]+"_edge_candidates.bmp")
-		print(DestinationFolder+name_array[size_m]+"_edge_candidates.bmp")		
+		current = cv2.imread(DestinationFolder+name_array[size_m]+"_final_candidates.bmp")
+		print(DestinationFolder+name_array[size_m]+"_final_candidates.bmp.bmp")		
 		print("current ka size",current.shape)
 		x,current_m,z = cv2.split(current)
 		print(count_ones(current_m,255),"now again check",name_array[size_m])
@@ -47,49 +37,6 @@ def writeResults(DestinationFolder,resultFolder,name_array,classifier,Y_predicte
 
 
 @jit
-def check_diff(image1,image2):
-	print(image1.shape,image2.shape,"priniting shape of images")
-	print(image1[400:410,400:415])
-	print("printing second image..")
-	print(image2[400:410,400:415])
-	i = 0
-	j = 0
-	inc = 0
-	while i < image1.shape[0]:
-		j = 0
-		while j < image1.shape[1]:
-			if image1[i,j] != image2[i,j]:
-				inc = inc + 1
-			j = j + 1
-		i = i + 1
-	print("no of differences: ",inc)
-
-
-
-@jit
-def show_final_result(name_array):
-	i = 0
-	j = 0
-	lc = 0
-	counter = 0
-	k = 0
-	while k < len(name_array):
-		edge_candidates = cv2.imread(DestinationFolder+name_array[k]+"_edge_candidates.bmp")
-		print("printing",DestinationFolder+name_array[k]+"_edge_candidates.bmp")
-		result = edge_candidates.copy()
-		while i < edge_candidates.shape[0]:
-			j = 0
-			while j < edge_candidates.shape[1]:
-				if edge_label[lc,0]==1:
-					result[i,j] = Y_predicted[counter]
-					counter = counter + 1
-				lc = lc +1
-				j = j + 1
-			i = i + 1
-		k = k +1
-	cv2.imwrite(DestinationFolder+file_name_no_extension+"final_result.bmp",result)
-
-@jit
 def standard_deviation_image(image):
 	clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
 	clahe_output = clahe.apply(image)
@@ -99,11 +46,11 @@ def standard_deviation_image(image):
 	while i < image.shape[0]:
 		j = 0
 		while j < image.shape[1]:
-			sub_image = clahe_output[i:i+9,j:j+9]
+			sub_image = clahe_output[i:i+20,j:j+25]
 			var = np.var(sub_image)
-			result[i:i+9,j:j+9] = var
-			j = j+9
-		i = i+9
+			result[i:i+20,j:j+25] = var
+			j = j+25
+		i = i+20
 	return result
 
 def get_DistanceFromOD_data(image, centre):
@@ -167,6 +114,23 @@ def get_average_hue(hue_image):
 	result = np.reshape(average_hue, (average_hue.size,1))
 	return result
 
+def get_average_saturation(hue_image):
+	average_hue = hue_image.copy()
+	i = 0
+	j = 0
+	while i < hue_image.shape[0]:
+		j = 0
+		while j < hue_image.shape[1]:
+			sub_image = hue_image[i:i+20,j:j+25]
+			mean = np.mean(sub_image)
+			average_hue[i:i+20,j:j+25] = mean
+			j = j+25
+		i = i+20
+	result = np.reshape(average_hue, (average_hue.size,1))
+	return result
+
+
+
 def get_SD_data(sd_image):	
 	feature_1 = np.reshape(sd_image, (sd_image.size,1))
 	print(feature_1.shape,"feature1")
@@ -176,6 +140,12 @@ def get_HUE_data(hue_image):
 	feature_2 = np.reshape(hue_image,(hue_image.size,1))
 	print(feature_2.shape,"feature2")
 	return feature_2
+
+def get_saturation_data(s_image):
+	feature = np.reshape(s_image,(s.size,1))
+	print(feature.shape)
+	return feature
+
 
 def get_INTENSITY_data(intensity_image):	
 	feature_3 = np.reshape(intensity_image,(intensity_image.size,1))
@@ -196,6 +166,7 @@ def get_GREEN_data(green_channel):
 	feature_6 = np.reshape(green_channel, (green_channel.size,1))
 	print(feature_6.shape,"feature6")
 	return feature_6
+
 
 def line_of_symmetry(image):
 	image_v = image.copy()
@@ -270,7 +241,7 @@ def calculate_entropy(image):
 @jit
 def edge_pixel_image(image,bv_image):
 	edge_result = image.copy()
-	edge_result = cv2.Canny(edge_result,40,100)	
+	edge_result = cv2.Canny(edge_result,30,100)	
 	i = 0
 	j = 0
 	while i < image.shape[0]:
@@ -283,7 +254,7 @@ def edge_pixel_image(image,bv_image):
 	newfin = cv2.dilate(edge_result, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3)), iterations=1)
 	return newfin
 
-def extract_bv(image):
+def extract_bv(image):			
 	clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
 	contrast_enhanced_green_fundus = clahe.apply(image)
 	# applying alternate sequential filtering (3 times closing opening)
@@ -302,30 +273,33 @@ def extract_bv(image):
 	im2, contours, hierarchy = cv2.findContours(f6.copy(),cv2.RETR_LIST,cv2.CHAIN_APPROX_SIMPLE)
 	for cnt in contours:
 		if cv2.contourArea(cnt) <= 200:
-			cv2.drawContours(mask, [cnt], -1, 0, -1)
+			cv2.drawContours(mask, [cnt], -1, 0, -1)			
 	im = cv2.bitwise_and(f5, f5, mask=mask)
-	ret,fin = cv2.threshold(im,15,255,cv2.THRESH_BINARY_INV)
-	newfin = cv2.erode(fin, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3)), iterations=1)
+	ret,fin = cv2.threshold(im,15,255,cv2.THRESH_BINARY_INV)			
+	newfin = cv2.erode(fin, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3)), iterations=1)	
 
 	# removing blobs of microaneurysm & unwanted bigger chunks taking in consideration they are not straight lines like blood
 	# vessels and also in an interval of area
 	fundus_eroded = cv2.bitwise_not(newfin)
 	xmask = np.ones(image.shape[:2], dtype="uint8") * 255
-	x1, xcontours, xhierarchy = cv2.findContours(fundus_eroded.copy(),cv2.RETR_LIST,cv2.CHAIN_APPROX_SIMPLE)
+	x1, xcontours, xhierarchy = cv2.findContours(fundus_eroded.copy(),cv2.RETR_LIST,cv2.CHAIN_APPROX_SIMPLE)	
 	for cnt in xcontours:
 		shape = "unidentified"
 		peri = cv2.arcLength(cnt, True)
 		approx = cv2.approxPolyDP(cnt, 0.04 * peri, False)
 		if len(approx) > 4 and cv2.contourArea(cnt) <= 3000 and cv2.contourArea(cnt) >= 100:
-			shape = "circle"
+			shape = "circle"	
 		else:
 			shape = "veins"
 		if(shape=="circle"):
-			cv2.drawContours(xmask, [cnt], -1, 0, -1)
-
-	finimage = cv2.bitwise_and(fundus_eroded,fundus_eroded,mask=xmask)
+			cv2.drawContours(xmask, [cnt], -1, 0, -1)	
+	
+	finimage = cv2.bitwise_and(fundus_eroded,fundus_eroded,mask=xmask)	
 	blood_vessels = cv2.bitwise_not(finimage)
-	return finimage
+	dilated = cv2.erode(blood_vessels, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(7,7)), iterations=1)
+	#dilated1 = cv2.dilate(blood_vessels, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3)), iterations=1)
+	blood_vessels_1 = cv2.bitwise_not(dilated)
+	return blood_vessels_1
 
 
 
@@ -333,81 +307,170 @@ if __name__ == "__main__":
 	pathFolder = "/home/sherlock/Internship@iit/exudate-detection/testing/"
 	filesArray = [x for x in os.listdir(pathFolder) if os.path.isfile(os.path.join(pathFolder,x))]
 	DestinationFolder = "/home/sherlock/Internship@iit/exudate-detection/testing-results/"
-	LabelFolder = "/home/sherlock/Internship@iit/exudate-detection/diaretdb1-label/"
+	LabelFolder = "/home/sherlock/Internship@iit/exudate-detection/diaretdb1-label/"	
 	name_array = []
-	number = 0
 	
 	if not os.path.exists(DestinationFolder):
-		os.mkdir(DestinationFolder)
+		os.mkdir(DestinationFolder)	
 
 	qq = 0
-
-	for file_name in filesArray:
-		print(pathFolder+'/'+file_name)
+		
+	for file_name in filesArray:		
 		file_name_no_extension = os.path.splitext(file_name)[0]
 		name_array.append(file_name_no_extension)
+		print(pathFolder+'/'+file_name,"Read this image",file_name_no_extension)
 		fundus1 = cv2.imread(pathFolder+'/'+file_name)
-		fundus = cv2.resize(fundus1,(800,615))
-		b,g,r = cv2.split(fundus)		
-		hsv_fundus = cv2.cvtColor(fundus,cv2.COLOR_BGR2HSV)
-		h,s,v = cv2.split(hsv_fundus)
-		gray_scale = cv2.cvtColor(fundus,cv2.COLOR_BGR2GRAY)
+		fundus = cv2.resize(fundus1,(800,615))		
+		fundus_mask = cv2.imread("fmask.tif")
+		fundus_mask = cv2.resize(fundus_mask,(800,615))
+		f1 = cv2.bitwise_and(fundus[:,:,0],fundus_mask[:,:,0])
+		f2 = cv2.bitwise_and(fundus[:,:,1],fundus_mask[:,:,1])
+		f3 = cv2.bitwise_and(fundus[:,:,2],fundus_mask[:,:,2])
+		fundus_dash = cv2.merge((f1,f2,f3))
+
+		cv2.imwrite(DestinationFolder+file_name_no_extension+"_resized_fundus.bmp",fundus_dash)	
+
+		b,g,r = cv2.split(fundus_dash)		
+		hsv_fundus = cv2.cvtColor(fundus_dash,cv2.COLOR_BGR2HSV)
+		h,s,v = cv2.split(hsv_fundus)		
+		gray_scale = cv2.cvtColor(fundus_dash,cv2.COLOR_BGR2GRAY)
 		clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
 		contrast_enhanced_fundus = clahe.apply(gray_scale)		
 		contrast_enhanced_green_fundus = clahe.apply(g)
 		average_intensity = get_average_intensity(contrast_enhanced_green_fundus)/255
 		average_hue = get_average_hue(h)/255
+		average_saturation = get_average_saturation(s)/255
+		print("shape hue",average_hue.shape,"shape intensity",average_intensity.shape)
 		#entropy = calculate_entropy(contrast_enhanced_fundus)
-		bv_image = extract_bv(g)
-		cv2.imwrite(DestinationFolder+file_name_no_extension+"_blood_vessels.bmp",bv_image)
+		bv_image_dash = extract_bv(g)
+		bv_image = extract_bv(gray_scale)
+
+		cv2.imwrite(DestinationFolder+file_name_no_extension+"_blood_vessels.bmp",bv_image_dash)
 		var_fundus = standard_deviation_image(contrast_enhanced_fundus)
-		edge_feature_output = edge_pixel_image(contrast_enhanced_green_fundus,bv_image)
-		#fin_edge = cv2.bitwise_and(edge_candidates,entropy)
+		edge_feature_output = edge_pixel_image(gray_scale,bv_image)
 		(cx,cy) = identify_OD_bv_density(bv_image)
 		newfin = cv2.dilate(edge_feature_output, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(5,5)), iterations=1)
-		edge_candidates = newfin.copy()
-		edge_candidates = cv2.circle(edge_candidates,(cx,cy), 100, (0,0,0), -10)
+		edge_candidates = cv2.erode(newfin, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3)), iterations=1)
+		cv2.circle(edge_candidates,(cx,cy), 100, (0,0,0), -10)
+		edge_candidates = np.uint8(edge_candidates)
 
-		cv2.imwrite(DestinationFolder+file_name_no_extension+"_edge_candidates.bmp",edge_candidates)
-		temp_image = cv2.imread(DestinationFolder+file_name_no_extension+"_edge_candidates.bmp")
-		q,temp_i,ww = cv2.split(temp_image)
-		check_diff(edge_candidates,temp_i)
+		#fin_edge = cv2.bitwise_and(edge_candidates,entropy)		
+		#(cx2,cy2) = identify_OD(contrast_enhanced_green_fundus)		
+		# if float(math.sqrt(math.pow((cx-cx2),2)+math.pow((cy-cy2),2))) > 50:
+		# 	print(file_name_no_extension + "OD DETECTION IMPROVEMENT")
+															
 		label_image = cv2.imread(LabelFolder+'/'+file_name_no_extension+"_final_label.bmp")
+		print(LabelFolder+'/'+file_name_no_extension+"_final_label.bmp")
 
 		feature1 = get_SD_data(var_fundus)/255
 		feature2 = get_HUE_data(h)/255
-		feature3 = get_INTENSITY_data(contrast_enhanced_fundus)/255
-		feature4 = get_EDGE_data(edge_candidates)/255
+		feature3 = get_saturation_data(s)/255		
+		feature4 = get_INTENSITY_data(contrast_enhanced_fundus)/255
 		feature5 = get_RED_data(r)/255
 		feature6 = get_GREEN_data(g)/255
 		feature7 = get_DistanceFromOD_data(bv_image,(cx,cy))/(var_fundus.shape[0]+var_fundus.shape[1])
 
+
+		Z = np.hstack((feature2,feature3))	#HUE and SATURATION
+		Z = np.float32(Z)
+
+		criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 50, 0.01)
+		ret,label,center=cv2.kmeans(Z,6,None,criteria,50,cv2.KMEANS_RANDOM_CENTERS)	
+
+		u, indices, counts = np.unique(label, return_index=True, return_counts=True)	
+
+		#u, indices, counts = np.unique(label, return_index=True, return_counts=True)					
+		center_t = [(t[0]*255,t[1]*255) for t in center]		
+		ex_color = (40,230)
+
+		distance = [(abs(t[0]- ex_color[0]),t) for t in center_t]								
+		index1 = distance.index((min(distance)))
+		if counts[distance.index((min(distance)))] > 0.35*gray_scale.shape[0]*gray_scale.shape[1]:
+			index1 = -1		
+
+		distance2 = [(abs(t[0]- ex_color[0])+abs(t[1]-ex_color[1]),t) for t in center_t]		
+		index2 = -1		
+		if min(distance2)[0] <=25:
+			index2 = distance2.index((min(distance2)))		
+		if counts[distance2.index((min(distance2)))] > 0.3*gray_scale.shape[0]*gray_scale.shape[1]:
+			index2 = -1
+
+		green = [0,255,0]
+		blue = [255,0,0]
+		red = [0,0,255]
+		white = [255,255,255]
+		black = [0,0,0]
+		pink = [220,30,210]
+		sky = [30,240,230]
+		yellow = [230,230,30]
+
+		color = [white,black,red,green,blue,pink]
+		color = np.array(color,np.uint8)
+		label = np.reshape(label, gray_scale.shape)
+
+
+		test = label.copy()		
+		if index1 == -1:
+			test.fill(0)
+		else:
+			test[test!=distance.index((min(distance)))] = -1
+			test[test==distance.index((min(distance)))] = 255
+			test[test==-1] = 0
+
+		test2 = label.copy()
+		if index2 == -1:
+			test2.fill(0)
+		else:
+			test2[test2!=index2] = -1
+			test2[test2==index2] = 255
+			test2[test2==-1] = 0
+	
+
+		y = color[label]
+		y = np.uint8(y)
+
+		res_from_clustering = np.bitwise_or(test2,test)
+		
+		cv2.imwrite(DestinationFolder+file_name_no_extension+"_candidate_exudates.bmp",edge_candidates)	
+		cv2.imwrite(DestinationFolder+file_name_no_extension+"_result_exudates_kmeans.bmp",y)	
+		cv2.imwrite(DestinationFolder+file_name_no_extension+"_test_result.bmp",test)
+		cv2.imwrite(DestinationFolder+file_name_no_extension+"_test2_result.bmp",test2)		
+		final_candidates = np.bitwise_or(edge_candidates,res_from_clustering)	
+		cv2.imwrite(DestinationFolder+file_name_no_extension+"_final_candidates.bmp",final_candidates)
+		
+		candidates_vector = np.reshape(final_candidates,(final_candidates.size,1))/255
+		print(final_candidates.shape,"SHAPE OF FINAL CANDIDATE")		
+		
 		b,gg,r = cv2.split(label_image)
 		label = np.reshape(gg,(gg.size,1))/255
 		co3 = count_ones(edge_candidates,255)
+		no_of_white = count_ones(label,1)
+		print(no_of_white,"no of white pixels")
 		print(co3,"check me")
-		counter = 0
 		temp = 0
+		counter = 0
 		this_image_rows = 0
 		with open('testing.csv', 'a') as csvfile:
 			filewriter = csv.writer(csvfile, delimiter=',',quotechar='|', quoting=csv.QUOTE_MINIMAL)
 			while counter < feature1.shape[0]:
-				if feature4[counter,0] == 1:
+				if candidates_vector[counter,0] == 1:
 					qq = qq + 1
 					temp = counter
 					this_image_rows = this_image_rows+1
-					filewriter.writerow([feature1[counter,0],feature2[counter,0],feature3[counter,0],feature5[counter,0],feature6[counter,0],average_intensity[counter,0],average_hue[counter,0],int(label[counter,0])])
+					filewriter.writerow([feature1[counter,0],feature2[counter,0],feature3[counter,0],feature4[counter,0],feature5[counter,0],feature6[counter,0],average_intensity[counter,0],average_hue[counter,0],average_saturation[counter,0],int(label[counter,0])])
 					#filewriter.writerow([feature1[counter,0],feature2[counter,0],feature3[counter,0],int(label[counter,0])])					
-				counter = counter +1
+				counter = counter + 1
 		
-		#print(feature1[temp,0],feature2[temp,0],feature3[temp,0],int(label[temp,0]))
 		print(feature1[temp,0],feature2[temp,0],feature3[temp,0],feature5[temp,0],feature6[temp,0],average_intensity[temp,0],average_hue[temp,0],int(label[temp,0]))
+		#print(feature1[temp,0],feature2[temp,0],feature3[temp,0],int(label[temp,0]))
 		print("no of rows addded : ", this_image_rows)
-		print("-----------x-------DONE-------x----------")
+
 
 	print("no of pixxels in total", qq)
-	print(name_array,"HEY NAMES")
 	os.rename("testing.csv","testing.txt")
+	
+
+			
 	
 	import numpy as np
 	from sklearn import preprocessing
@@ -430,13 +493,13 @@ if __name__ == "__main__":
 	#dataset_test = pd.read_csv("test.csv")
 	print(dataset_test.shape,"test_shape")
 
-	X_train = dataset_train[:,0:6]
-	Y_train = dataset_train[:,7]
+	X_train = dataset_train[:,0:8]
+	Y_train = dataset_train[:,9]
 
 	print(dataset_train[50:55,3])
 
-	X_test = dataset_test[:,0:6]
-	Y_test = dataset_test[:,7]
+	X_test = dataset_test[:,0:8]
+	Y_test = dataset_test[:,9]
 
 
 
@@ -448,53 +511,17 @@ if __name__ == "__main__":
 	#clf = KNeighborsClassifier(n_neighbors = 5)
 	#clf = AdaBoostClassifier()
 
-	# clf = RandomForestClassifier(n_estimators=10)
-	# clf.fit(X_train, Y_train) 
+	clf = RandomForestClassifier(n_estimators=10)
+	clf.fit(X_train, Y_train) 
 
-	# Y_predicted = clf.predict(X_test)
+	Y_predicted = clf.predict(X_test)
 	# print (Y_predicted)
 
-	# print("accuracy")
-	# print(accuracy_score(Y_test, Y_predicted))
+	print("accuracy")
+	print(accuracy_score(Y_test, Y_predicted))
 
-	# print("confusion matrix")
-	# print (confusion_matrix(Y_test,Y_predicted))
-	from collections import Counter
-	print("initially unbalanced classes : ")
-	print(sorted(Counter(Y_train).items()))
-	from imblearn.over_sampling import RandomOverSampler
-	ros = RandomOverSampler(random_state=0)
-	X_resampled, Y_resampled = ros.fit_sample(X_train, Y_train)	
-	print("when balanced classes : ")
-	print(sorted(Counter(Y_resampled).items()))
-
-	print("svc")
-	from sklearn.svm import LinearSVC
-	clf = LinearSVC()
-	clf.fit(X_resampled, Y_resampled)
-	Y_predicted = clf.predict(X_test)
-	print(accuracy_score(Y_test, Y_predicted),"accuracy")
-	print (confusion_matrix(Y_test,Y_predicted),"confusion matrix")
-
-
-	print("adaboost")
-	clf = AdaBoostClassifier()
-	clf.fit(X_resampled, Y_resampled)
-	Y_predicted = clf.predict(X_test)
-	print(accuracy_score(Y_test, Y_predicted),"accuracy")
-	print (confusion_matrix(Y_test,Y_predicted),"confusion matrix")
-
-	print("randomforest")
-	clf = RandomForestClassifier(n_estimators=10)
-	clf.fit(X_resampled, Y_resampled)
-	Y_predicted = clf.predict(X_test)
-	print(accuracy_score(Y_test, Y_predicted),"accuracy")
-	print (confusion_matrix(Y_test,Y_predicted),"confusion matrix")
-
-
-
-
-
+	print("confusion matrix")
+	print (confusion_matrix(Y_test,Y_predicted))
 	
 	resultFolder = "/home/sherlock/Internship@iit/exudate-detection/results-exudates/"		
 
@@ -504,50 +531,4 @@ if __name__ == "__main__":
 	print("DONE_-------------------x----xxxxx-xx-x")
 
 
-
-		#print(feature1[500:510,:],feature2[500:510,:],feature3[500:510,:],feature4[500:510,:])
-		
-		# data = np.concatenate((feature1,feature2,feature3,feature4),axis=1)
-		# data = np.float32(data)
-		# criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 50, 0.01)
-		# ret,label,center=cv2.kmeans(edge_candidates_image,2,None,criteria,10,cv2.KMEANS_RANDOM_CENTERS)
-		# print(center)
-
-		# green = [0,255,0]
-		# blue = [255,0,0]
-		# red = [0,0,255]
-		# white = [255,255,255]
-		# black = [0,0,0]
-
-		# color = [green,blue,red,white,black]
-		# color = np.array(color,np.uint8)
-		# label = np.reshape(label, gray_scale.shape)
-		# y = color[label]
-		# y = np.uint8(y)		
-		# #cv2.imwrite("kmeans.bmp",y)		
-		#cv2.waitKey()			
-		#cv2.imwrite(DestinationFolder+file_name_no_extension+"_candidate_exudates.bmp",edge_candidates)		
-		#cv2.imwrite(DestinationFolder+file_name_no_extension+"_result_exudates_kmeans.bmp",y)
-		#cv2.imwrite(DestinationFolder+file_name_no_extension+"_sd_result.bmp",var_fundus)
-
-# X = np.random.randint(25,50,(25,2))
-# Y = np.random.randint(60,85,(25,2))
-# Z = np.vstack((X,Y))
-
-# # convert to np.float32
-# Z = np.float32(Z)
-
-# # define criteria and apply kmeans()
-# criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
-# ret,label,center=cv2.kmeans(Z,2,None,criteria,10,cv2.KMEANS_RANDOM_CENTERS)
-
-# # Now separate the data, Note the flatten()
-# A = Z[label.ravel()==0]
-# B = Z[label.ravel()==1]
-
-# # Plot the data
-# plt.scatter(A[:,0],A[:,1])
-# plt.scatter(B[:,0],B[:,1],c = 'r')
-# plt.scatter(center[:,0],center[:,1],s = 80,c = 'y', marker = 's')
-# plt.xlabel('Height'),plt.ylabel('Weight')
-# plt.show()
+			
