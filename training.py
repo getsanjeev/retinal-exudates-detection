@@ -106,38 +106,31 @@ def get_average_saturation(hue_image):
 
 def get_SD_data(sd_image):	
 	feature_1 = np.reshape(sd_image, (sd_image.size,1))
-	print(feature_1.shape,"feature1")
 	return feature_1
 
 def get_HUE_data(hue_image):	
-	feature_2 = np.reshape(hue_image,(hue_image.size,1))
-	print(feature_2.shape,"feature2")
+	feature_2 = np.reshape(hue_image,(hue_image.size,1))	
 	return feature_2
 
 def get_saturation_data(s_image):
-	feature = np.reshape(s_image,(s.size,1))
-	print(feature.shape)
+	feature = np.reshape(s_image,(s.size,1))	
 	return feature
 
 
 def get_INTENSITY_data(intensity_image):	
-	feature_3 = np.reshape(intensity_image,(intensity_image.size,1))
-	print(feature_3.shape,"feature3")
+	feature_3 = np.reshape(intensity_image,(intensity_image.size,1))	
 	return feature_3
 
 def get_EDGE_data(edge_candidates_image):
-	feature_4 = np.reshape(edge_candidates_image,(edge_candidates_image.size,1))
-	print(feature_4.shape,"feature4")
+	feature_4 = np.reshape(edge_candidates_image,(edge_candidates_image.size,1))	
 	return feature_4
 
 def get_RED_data(red_channel):	
-	feature_5 = np.reshape(red_channel, (red_channel.size,1))
-	print(feature_5.shape,"feature5")
+	feature_5 = np.reshape(red_channel, (red_channel.size,1))	
 	return feature_5
 
 def get_GREEN_data(green_channel):
-	feature_6 = np.reshape(green_channel, (green_channel.size,1))
-	print(feature_6.shape,"feature6")
+	feature_6 = np.reshape(green_channel, (green_channel.size,1))	
 	return feature_6
 
 
@@ -166,8 +159,7 @@ def identify_OD(image):
 			cv2.drawContours(mask, [cnt], -1, 0, -1)
 	M = cv2.moments(prev_contour)
 	cx = int(M['m10']/M['m00'])
-	cy = int(M['m01']/M['m00'])
-	print(cx,cy)
+	cy = int(M['m01']/M['m00'])	
 	return (cx,cy)
 
 def identify_OD_bv_density(blood_vessel_image):
@@ -286,9 +278,20 @@ if __name__ == "__main__":
 		os.mkdir(DestinationFolder)	
 
 	qq = 0
+
+	OD_data = np.genfromtxt('OD_info.txt', delimiter=',', dtype=None, names=('name','x-coordinate','y-coordinate'))
+	coordinates = []
+	name = []	
+	counterd = 0
+
+	for t in OD_data:		
+		coordinates.append((t[1],t[2]))
+		name.append(t[0].decode("utf-8"))
+		counterd = counterd + 1
 		
 	for file_name in filesArray:		
 		file_name_no_extension = os.path.splitext(file_name)[0]
+		coordinates_OD = coordinates[name.index(file_name_no_extension+"_resized")]		
 		print(pathFolder+'/'+file_name,"Read this image",file_name_no_extension)
 		fundus1 = cv2.imread(pathFolder+'/'+file_name)
 		fundus = cv2.resize(fundus1,(800,615))		
@@ -310,8 +313,7 @@ if __name__ == "__main__":
 		contrast_enhanced_green_fundus = clahe.apply(g)
 		average_intensity = get_average_intensity(contrast_enhanced_green_fundus)/255
 		average_hue = get_average_hue(h)/255
-		average_saturation = get_average_saturation(s)/255
-		print("shape hue",average_hue.shape,"shape intensity",average_intensity.shape)
+		average_saturation = get_average_saturation(s)/255		
 		#entropy = calculate_entropy(contrast_enhanced_fundus)
 		bv_image_dash = extract_bv(g)
 		bv_image = extract_bv(gray_scale)
@@ -329,7 +331,7 @@ if __name__ == "__main__":
 		# 	print(file_name_no_extension + "OD DETECTION IMPROVEMENT")
 															
 		label_image = cv2.imread(LabelFolder+'/'+file_name_no_extension+"_final_label.bmp")
-		print(LabelFolder+'/'+file_name_no_extension+"_final_label.bmp")
+		#print(LabelFolder+'/'+file_name_no_extension+"_final_label.bmp")
 
 		feature1 = get_SD_data(var_fundus)/255
 		feature2 = get_HUE_data(h)/255
@@ -405,21 +407,29 @@ if __name__ == "__main__":
 		cv2.imwrite(DestinationFolder+file_name_no_extension+"_test_result.bmp",test)
 		cv2.imwrite(DestinationFolder+file_name_no_extension+"_test2_result.bmp",test2)		
 		final_candidates = np.bitwise_or(edge_candidates,res_from_clustering)	
-		(cx,cy) = identify_OD_bv_density(bv_image_dash)
-		cv2.circle(final_candidates,(cx,cy), 100, (0,0,0), -10)		
+
+		OD_loc = gray_scale.copy()
+		cv2.circle(OD_loc,coordinates_OD, 70, (0,0,0), -10)
+		cv2.imwrite(DestinationFolder+file_name_no_extension+"_OD_.bmp",OD_loc)
+		cl_res_dev = cv2.imread("/home/sherlock/Internship@iit/exudate-detection/training-result-kmeans-deviation/"+file_name_no_extension+"_final_candidates.bmp")
+		print("/home/sherlock/Internship@iit/exudate-detection/training-result-kmeans-deviation/"+file_name_no_extension+"_final_candidates.bmp")
+		final_candidates = np.bitwise_or(final_candidates,cl_res_dev[:,:,0])
+		cv2.circle(final_candidates,coordinates_OD, 70, (0,0,0), -10)		
 		maskk = cv2.imread("MASK.bmp")
 		final_candidates = np.bitwise_and(final_candidates,maskk[:,:,0])
+		final_candidates = final_candidates.astype('uint8')
+		final_candidates = cv2.dilate(final_candidates, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3)), iterations=1)		
 		cv2.imwrite(DestinationFolder+file_name_no_extension+"_final_candidates.bmp",final_candidates)
 		
 		candidates_vector = np.reshape(final_candidates,(final_candidates.size,1))/255
-		print(final_candidates.shape,"SHAPE OF FINAL CANDIDATE")		
+		#print(final_candidates.shape,"SHAPE OF FINAL CANDIDATE")		
 		
 		b,gg,r = cv2.split(label_image)
 		label = np.reshape(gg,(gg.size,1))/255
 		co3 = count_ones(edge_candidates,255)
 		no_of_white = count_ones(label,1)
-		print(no_of_white,"no of white pixels")
-		print(co3,"check me")
+		#print(no_of_white,"no of white pixels")
+		#print(co3,"check me")
 		temp = 0
 		counter = 0
 		this_image_rows = 0
@@ -430,11 +440,11 @@ if __name__ == "__main__":
 					qq = qq + 1
 					temp = counter
 					this_image_rows = this_image_rows+1
-					filewriter.writerow([feature1[counter,0],feature2[counter,0],feature3[counter,0],feature4[counter,0],feature5[counter,0],feature6[counter,0],average_intensity[counter,0],average_hue[counter,0],average_saturation[counter,0],int(label[counter,0])])
+					filewriter.writerow([feature2[counter,0],feature3[counter,0],feature4[counter,0],feature5[counter,0],feature6[counter,0],average_intensity[counter,0],average_hue[counter,0],average_saturation[counter,0],int(label[counter,0])])
 					#filewriter.writerow([feature1[counter,0],feature2[counter,0],feature3[counter,0],int(label[counter,0])])					
 				counter = counter + 1
 		
-		print(feature1[temp,0],feature2[temp,0],feature3[temp,0],feature5[temp,0],feature6[temp,0],average_intensity[temp,0],average_hue[temp,0],int(label[temp,0]))
+		print(feature2[temp,0],feature3[temp,0],feature5[temp,0],feature6[temp,0],average_intensity[temp,0],average_hue[temp,0],int(label[temp,0]))
 		#print(feature1[temp,0],feature2[temp,0],feature3[temp,0],int(label[temp,0]))
 		print("no of rows addded : ", this_image_rows)
 

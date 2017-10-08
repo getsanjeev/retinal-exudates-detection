@@ -18,10 +18,10 @@ def writeResults(DestinationFolder,resultFolder,name_array,classifier,Y_predicte
 	lc = 0
 	while size_m < len(name_array):
 		current = cv2.imread(DestinationFolder+name_array[size_m]+"_final_candidates.bmp")
-		print(DestinationFolder+name_array[size_m]+"_final_candidates.bmp.bmp")		
-		print("current ka size",current.shape)
+		#print(DestinationFolder+name_array[size_m]+"_final_candidates.bmp.bmp")		
+		#print("current ka size",current.shape)
 		x,current_m,z = cv2.split(current)
-		print(count_ones(current_m,255),"now again check",name_array[size_m])
+		#print(count_ones(current_m,255),"now again check",name_array[size_m])
 		i = 0		
 		while i < current_m.shape[0]:
 			j = 0
@@ -133,38 +133,38 @@ def get_average_saturation(hue_image):
 
 def get_SD_data(sd_image):	
 	feature_1 = np.reshape(sd_image, (sd_image.size,1))
-	print(feature_1.shape,"feature1")
+	#print(feature_1.shape,"feature1")
 	return feature_1
 
 def get_HUE_data(hue_image):	
 	feature_2 = np.reshape(hue_image,(hue_image.size,1))
-	print(feature_2.shape,"feature2")
+	#print(feature_2.shape,"feature2")
 	return feature_2
 
 def get_saturation_data(s_image):
 	feature = np.reshape(s_image,(s.size,1))
-	print(feature.shape)
+	#print(feature.shape)
 	return feature
 
 
 def get_INTENSITY_data(intensity_image):	
 	feature_3 = np.reshape(intensity_image,(intensity_image.size,1))
-	print(feature_3.shape,"feature3")
+	#print(feature_3.shape,"feature3")
 	return feature_3
 
 def get_EDGE_data(edge_candidates_image):
 	feature_4 = np.reshape(edge_candidates_image,(edge_candidates_image.size,1))
-	print(feature_4.shape,"feature4")
+	#print(feature_4.shape,"feature4")
 	return feature_4
 
 def get_RED_data(red_channel):	
 	feature_5 = np.reshape(red_channel, (red_channel.size,1))
-	print(feature_5.shape,"feature5")
+	#print(feature_5.shape,"feature5")
 	return feature_5
 
 def get_GREEN_data(green_channel):
 	feature_6 = np.reshape(green_channel, (green_channel.size,1))
-	print(feature_6.shape,"feature6")
+	#print(feature_6.shape,"feature6")
 	return feature_6
 
 
@@ -194,7 +194,7 @@ def identify_OD(image):
 	M = cv2.moments(prev_contour)
 	cx = int(M['m10']/M['m00'])
 	cy = int(M['m01']/M['m00'])
-	print(cx,cy)
+	#print(cx,cy)
 	return (cx,cy)
 
 def identify_OD_bv_density(blood_vessel_image):
@@ -314,9 +314,21 @@ if __name__ == "__main__":
 		os.mkdir(DestinationFolder)	
 
 	qq = 0
+
+	OD_data = np.genfromtxt('OD_info.txt', delimiter=',', dtype=None, names=('name','x-coordinate','y-coordinate'))
+	coordinates = []
+	name = []	
+	counterd = 0
+
+	for t in OD_data:		
+		coordinates.append((t[1],t[2]))
+		name.append(t[0].decode("utf-8"))
+		counterd = counterd + 1
 		
 	for file_name in filesArray:		
 		file_name_no_extension = os.path.splitext(file_name)[0]
+		coordinates_OD = coordinates[name.index(file_name_no_extension+"_resized")]
+		#print(coordinates_OD,"coordinates of OPTIC DISK")
 		name_array.append(file_name_no_extension)
 		print(pathFolder+'/'+file_name,"Read this image",file_name_no_extension)
 		fundus1 = cv2.imread(pathFolder+'/'+file_name)
@@ -340,7 +352,7 @@ if __name__ == "__main__":
 		average_intensity = get_average_intensity(contrast_enhanced_green_fundus)/255
 		average_hue = get_average_hue(h)/255
 		average_saturation = get_average_saturation(s)/255
-		print("shape hue",average_hue.shape,"shape intensity",average_intensity.shape)
+		#print("shape hue",average_hue.shape,"shape intensity",average_intensity.shape)
 		#entropy = calculate_entropy(contrast_enhanced_fundus)
 		bv_image_dash = extract_bv(g)
 		bv_image = extract_bv(gray_scale)
@@ -358,7 +370,7 @@ if __name__ == "__main__":
 		# 	print(file_name_no_extension + "OD DETECTION IMPROVEMENT")
 															
 		label_image = cv2.imread(LabelFolder+'/'+file_name_no_extension+"_final_label.bmp")
-		print(LabelFolder+'/'+file_name_no_extension+"_final_label.bmp")
+		#print(LabelFolder+'/'+file_name_no_extension+"_final_label.bmp")
 
 		feature1 = get_SD_data(var_fundus)/255
 		feature2 = get_HUE_data(h)/255
@@ -429,20 +441,29 @@ if __name__ == "__main__":
 
 		res_from_clustering = np.bitwise_or(test2,test)
 		
-		cv2.imwrite(DestinationFolder+file_name_no_extension+"_candidate_exudates.bmp",edge_candidates)	
+		cv2.imwrite(DestinationFolder+file_name_no_extension+"_candidate_exudates.bmp",edge_candidates)
 		cv2.imwrite(DestinationFolder+file_name_no_extension+"_result_exudates_kmeans.bmp",y)	
 		cv2.imwrite(DestinationFolder+file_name_no_extension+"_test_result.bmp",test)
 		cv2.imwrite(DestinationFolder+file_name_no_extension+"_test2_result.bmp",test2)		
 		final_candidates = np.bitwise_or(edge_candidates,res_from_clustering)
-		(cx,cy) = identify_OD_bv_density(bv_image_dash)
-		cv2.circle(final_candidates,(cx,cy), 100, (0,0,0), -10)
+		
+		OD_loc = gray_scale.copy()
+		cv2.circle(OD_loc,coordinates_OD, 70, (0,0,0), -10)
+		cv2.imwrite(DestinationFolder+file_name_no_extension+"_OD_.bmp",OD_loc)
+		cl_res_dev = cv2.imread("/home/sherlock/Internship@iit/exudate-detection/testing-result-kmeans-deviation/"+file_name_no_extension+"_final_candidates.bmp")
+		print("/home/sherlock/Internship@iit/exudate-detection/testing-result-kmeans-deviation/"+file_name_no_extension+"_final_candidates.bmp")
+		final_candidates = np.bitwise_or(final_candidates,cl_res_dev[:,:,0])
+
+		cv2.circle(final_candidates,coordinates_OD, 70, (0,0,0), -10)
 		maskk = cv2.imread("MASK.bmp")
 		final_candidates = np.bitwise_and(final_candidates,maskk[:,:,0])
+		final_candidates = final_candidates.astype('uint8')
+		final_candidates = cv2.dilate(final_candidates, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3)), iterations=1)
 		cv2.imwrite(DestinationFolder+file_name_no_extension+"_final_candidates.bmp",final_candidates)
 		
 		
 		candidates_vector = np.reshape(final_candidates,(final_candidates.size,1))/255		
-		print(final_candidates.shape,"SHAPE OF FINAL CANDIDATE")		
+		#print(final_candidates.shape,"SHAPE OF FINAL CANDIDATE")		
 		
 		b,gg,r = cv2.split(label_image)
 		label = np.reshape(gg,(gg.size,1))/255
@@ -460,11 +481,11 @@ if __name__ == "__main__":
 					qq = qq + 1
 					temp = counter
 					this_image_rows = this_image_rows+1
-					filewriter.writerow([feature1[counter,0],feature2[counter,0],feature3[counter,0],feature4[counter,0],feature5[counter,0],feature6[counter,0],average_intensity[counter,0],average_hue[counter,0],average_saturation[counter,0],int(label[counter,0])])
+					filewriter.writerow([feature2[counter,0],feature3[counter,0],feature4[counter,0],feature5[counter,0],feature6[counter,0],average_intensity[counter,0],average_hue[counter,0],average_saturation[counter,0],int(label[counter,0])])
 					#filewriter.writerow([feature1[counter,0],feature2[counter,0],feature3[counter,0],int(label[counter,0])])					
 				counter = counter + 1
 		
-		print(feature1[temp,0],feature2[temp,0],feature3[temp,0],feature5[temp,0],feature6[temp,0],average_intensity[temp,0],average_hue[temp,0],int(label[temp,0]))
+		print(feature2[temp,0],feature3[temp,0],feature5[temp,0],feature6[temp,0],average_intensity[temp,0],average_hue[temp,0],int(label[temp,0]))
 		#print(feature1[temp,0],feature2[temp,0],feature3[temp,0],int(label[temp,0]))
 		print("no of rows addded : ", this_image_rows)
 
@@ -496,41 +517,81 @@ if __name__ == "__main__":
 	#dataset_test = pd.read_csv("test.csv")
 	print(dataset_test.shape,"test_shape")
 
-	X_train = dataset_train[:,0:8]
-	Y_train = dataset_train[:,9]
+	X_train = dataset_train[:,0:7]
+	Y_train = dataset_train[:,8]
 
 	print(dataset_train[50:55,3])
 
-	X_test = dataset_test[:,0:8]
-	Y_test = dataset_test[:,9]
+	X_test = dataset_test[:,0:7]
+	Y_test = dataset_test[:,8]
 
 
 
 	print(dataset_train[100000:100130,:])
 
 
-	#clf = AdaBoostClassifier(DecisionTreeClassifier(max_depth = 5),algorithm="SAMME",n_estimators=100)
-	#clf = SVC(kernel = 'poly')
-	#clf = KNeighborsClassifier(n_neighbors = 5)
-	#clf = AdaBoostClassifier()
 
+
+	from collections import Counter
+	print("initially unbalanced classes : ")
+	print(sorted(Counter(Y_train).items()))
+
+	clf_name = "rf"
+	resultFolder = "/home/sherlock/Internship@iit/exudate-detection/"+clf_name+"_results-exudates/"
 	clf = RandomForestClassifier(n_estimators=10)
-	clf.fit(X_train, Y_train) 
-
+	clf.fit(X_train, Y_train)
 	Y_predicted = clf.predict(X_test)
-	# print (Y_predicted)
-
 	print("accuracy")
 	print(accuracy_score(Y_test, Y_predicted))
-
 	print("confusion matrix")
 	print (confusion_matrix(Y_test,Y_predicted))
-	
-	resultFolder = "/home/sherlock/Internship@iit/exudate-detection/results-exudates/"		
+	writeResults(DestinationFolder,resultFolder,name_array,clf_name,Y_predicted)
 
-	writeResults(DestinationFolder,resultFolder,name_array,"rf",Y_predicted)
+	clf_name = "ab"
+	resultFolder = "/home/sherlock/Internship@iit/exudate-detection/"+clf_name+"_results-exudates/"
+	clf = AdaBoostClassifier(DecisionTreeClassifier(max_depth = 5),algorithm="SAMME",n_estimators=100)
+	clf.fit(X_train, Y_train)
+	Y_predicted = clf.predict(X_test)
+	print("accuracy")
+	print(accuracy_score(Y_test, Y_predicted))
+	print("confusion matrix")
+	print (confusion_matrix(Y_test,Y_predicted))
+	writeResults(DestinationFolder,resultFolder,name_array,clf_name,Y_predicted)
 
-	
+	clf_name = "abc"
+	resultFolder = "/home/sherlock/Internship@iit/exudate-detection/"+clf_name+"_results-exudates/"
+	clf = AdaBoostClassifier()
+	clf.fit(X_train, Y_train)
+	Y_predicted = clf.predict(X_test)
+	print("accuracy")
+	print(accuracy_score(Y_test, Y_predicted))
+	print("confusion matrix")
+	print (confusion_matrix(Y_test,Y_predicted))
+	writeResults(DestinationFolder,resultFolder,name_array,clf_name,Y_predicted)
+
+	clf_name = "svc"
+	resultFolder = "/home/sherlock/Internship@iit/exudate-detection/"+clf_name+"_results-exudates/"
+	clf = SVC(kernel = 'linear')
+	clf.fit(X_train, Y_train)
+	Y_predicted = clf.predict(X_test)
+	print("accuracy")
+	print(accuracy_score(Y_test, Y_predicted))
+	print("confusion matrix")
+	print (confusion_matrix(Y_test,Y_predicted))
+	writeResults(DestinationFolder,resultFolder,name_array,clf_name,Y_predicted)
+
+	clf_name = "knn"
+	resultFolder = "/home/sherlock/Internship@iit/exudate-detection/"+clf_name+"_results-exudates/"
+	clf = KNeighborsClassifier(n_neighbors = 5)	
+	clf.fit(X_train, Y_train)
+	Y_predicted = clf.predict(X_test)
+	print("accuracy")
+	print(accuracy_score(Y_test, Y_predicted))
+	print("confusion matrix")
+	print (confusion_matrix(Y_test,Y_predicted))
+	writeResults(DestinationFolder,resultFolder,name_array,clf_name,Y_predicted)
+
+
 	print("DONE_-------------------x----xxxxx-xx-x")
 
 
