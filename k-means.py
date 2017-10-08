@@ -12,12 +12,29 @@ def standard_deviation_image(image):
 	result = clahe_output.copy()
 	i = 0
 	j = 0
+	while i < image.shape[0]+9:
+		j = 0
+		while j < image.shape[1]+9:
+			sub_image = clahe_output[i:i+9,j:j+9]
+			var = np.var(sub_image)
+			result[i:i+9,j:j+9] = var
+			j = j+9
+		i = i+9
+	return result
+
+@jit
+def deviation_from_mean(image):
+	clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
+	clahe_output = clahe.apply(image)
+	result = clahe_output.copy()
+	i = 0
+	j = 0
 	while i < image.shape[0]:
 		j = 0
 		while j < image.shape[1]:
 			sub_image = clahe_output[i:i+9,j:j+9]
-			var = np.var(sub_image)
-			result[i:i+9,j:j+9] = var
+			mean = np.mean(sub_image)
+			result[i,j] = abs(mean - clahe_output[i,j])
 			j = j+9
 		i = i+9
 	return result
@@ -196,30 +213,33 @@ def extract_bv(image):
 if __name__ == "__main__":
 	pathFolder = "/home/sherlock/Internship@iit/exudate-detection/training/"
 	filesArray = [x for x in os.listdir(pathFolder) if os.path.isfile(os.path.join(pathFolder,x))]
-	DestinationFolder = "/home/sherlock/Internship@iit/exudate-detection/training-result-kmeans/"
+	DestinationFolder = "/home/sherlock/Internship@iit/exudate-detection/training-result-kmeans-deviation/"
 	
 	if not os.path.exists(DestinationFolder):
 		os.mkdir(DestinationFolder)	
 	for file_name in filesArray:
-		print(pathFolder+'/'+file_name)		
+		print(pathFolder+'/'+file_name)
 		file_name_no_extension = os.path.splitext(file_name)[0]
 		fundus = cv2.imread(pathFolder+'/'+file_name)
 		fundus = cv2.resize(fundus,(800,615))
-		fundus_mask = cv2.imread(pathFolder+'/'+"fmask.tif")
+		fundus_mask = cv2.imread("fmask.tif")
 		fundus_mask = cv2.resize(fundus_mask,(800,615))
 
 		f1 = cv2.bitwise_and(fundus[:,:,0],fundus_mask[:,:,0])
 		f2 = cv2.bitwise_and(fundus[:,:,1],fundus_mask[:,:,1])
 		f3 = cv2.bitwise_and(fundus[:,:,2],fundus_mask[:,:,2])
-		fundus_dash = cv2.merge((f1,f2,f3))		
+		fundus_dash = cv2.merge((f1,f2,f3))
+
+		b,g,r = cv2.split(fundus_dash)
+
 		hsv_fundus = cv2.cvtColor(fundus_dash,cv2.COLOR_BGR2HSV)
 		h,s,v = cv2.split(hsv_fundus)	
 		gray_scale = cv2.cvtColor(fundus_dash,cv2.COLOR_BGR2GRAY)
 		clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
 		contrast_enhanced_fundus = clahe.apply(gray_scale)
 		#entropy = calculate_entropy(contrast_enhanced_fundus)
-		bv_image = extract_bv(gray_scale)						
-		var_fundus = standard_deviation_image(gray_scale)
+		bv_image = extract_bv(gray_scale)
+		#var_fundus = standard_deviation_image(gray_scale)
 		edge_feature_output = edge_pixel_image(gray_scale,bv_image)
 		#fin_edge = cv2.bitwise_and(edge_candidates,entropy)		
 		(cx,cy) = identify_OD_bv_density(bv_image)				
@@ -228,12 +248,13 @@ if __name__ == "__main__":
 		edge_candidates = cv2.erode(newfin, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3)), iterations=1)
 		cv2.circle(edge_candidates,(cx,cy), 100, (0,0,0), -10)
 		edge_candidates = np.uint8(edge_candidates)
+		ff = deviation_from_mean(g)
 
-		feature1 = get_SD_data(var_fundus)/255
-		feature2 = get_HUE_data(h)/255		
-		feature3 = get_saturation_data(s)/255
-		feature4 = get_INTENSITY_data(v)/255
-		Z = np.hstack((feature2,feature3))
+		feature1 = get_SD_data(ff)/255
+		feature2 = get_HUE_data(b)/255
+		feature3 = get_saturation_data(g)/255
+		feature4 = get_INTENSITY_data(r)/255
+		Z = np.hstack((feature1))
 		Z = np.float32(Z)
 		#feature5 = get_DistanceFromOD_data(center)
 
@@ -256,7 +277,7 @@ if __name__ == "__main__":
 		print(counts,"count of labels in Clustered image")
 		
 
-		center_t = [(t[0]*255,t[1]*255) for t in center]
+		center_t = [(t[0]*255) for t in center]
 		#print(center_t,"centre relevant to me")
 
 		#print("total area : ",gray_scale.shape[0]*gray_scale.shape[1])
@@ -268,7 +289,7 @@ if __name__ == "__main__":
 		print(distance.index((min(distance))),"index label in test1")
 		print("count of my selected - Channel 1:",counts[distance.index((min(distance)))])
 		index1 = distance.index((min(distance)))
-		if counts[distance.index((min(distance)))] > 0.3*gray_scale.shape[0]*gray_scale.shape[1]:
+		if counts[distance.index((min(distance)))] > 0.35*gray_scale.shape[0]*gray_scale.shape[1]:
 			index1 = -1		
 
 
