@@ -36,7 +36,7 @@ if __name__ == "__main__":
 	pathFolder2 = "/home/sherlock/Internship@iit/exudate-detection/diaretdb_resized/"
 	filesArray1 = [x for x in os.listdir(pathFolder1) if os.path.isfile(os.path.join(pathFolder1,x))]
 	#filesArray2 = [x for x in os.listdir(pathFolder2) if os.path.isfile(os.path.join(pathFolder2,x))]
-	DestinationFolder = "/home/sherlock/Internship@iit/exudate-detection/diaretdb1-label/"	
+	DestinationFolder = "/home/sherlock/Internship@iit/exudate-detection/diaretdb1-label111/"	
 
 	if not os.path.exists(DestinationFolder):
 		os.mkdir(DestinationFolder)	
@@ -63,7 +63,7 @@ if __name__ == "__main__":
 		enhanced_original_fundus = clahe.apply(g)
 		
 		candidate_label = cv2.bitwise_and(enhanced_original_fundus,bin_label)		
-		ret,fin_label = cv2.threshold(candidate_label,get_roi_mean(candidate_label)+5,255,cv2.THRESH_BINARY)
+		ret,fin_label = cv2.threshold(candidate_label,get_roi_mean(candidate_label)+10,255,cv2.THRESH_BINARY)
 		cv2.imwrite(DestinationFolder+file_name_no_extension+"_final_label.bmp",fin_label)
 		print(fin_label.shape,"www")
 		cv2.imwrite(DestinationFolder+file_name_no_extension+"_candidate_label.bmp",candidate_label)
