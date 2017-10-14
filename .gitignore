@@ -12,6 +12,7 @@ trail1/
 extras/
 diaretdb1-label/
 diaretdb_resized/
+
 # Distribution / packaging
 .Python
 build/
@@ -32,6 +33,7 @@ wheels/
 *.txt
 *.csv
 *.giff
+*.bmp
 *.gif
 *.tif
 *.tiff
