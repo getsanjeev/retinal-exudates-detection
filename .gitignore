@@ -12,6 +12,7 @@ trail1/
 extras/
 diaretdb1-label/
 diaretdb_resized/
+k_means/
 
 # Distribution / packaging
 .Python
@@ -33,6 +34,7 @@ wheels/
 *.txt
 *.csv
 *.giff
+*.gif
 *.bmp
 *.gif
 *.tif
