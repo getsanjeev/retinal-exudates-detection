@@ -26,6 +26,26 @@ def standard_deviation_image(image):
 		i = i+20
 	return result
 
+@jit
+def deviation_from_mean(image):
+	clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
+	clahe_output = clahe.apply(image)
+	print(clahe_output)
+	result = clahe_output.copy()
+	result = result.astype('int')
+	i = 0
+	j = 0
+	while i < image.shape[0]:
+		j = 0
+		while j < image.shape[1]:
+			sub_image = clahe_output[i:i+5,j:j+5]
+			mean = np.mean(sub_image)
+			sub_image = sub_image - mean
+			result[i:i+5,j:j+5] = sub_image
+			j = j+5
+		i = i+5
+	return result
+
 def get_DistanceFromOD_data(image, centre):
 	my_image = image.copy()
 	x_cor = centre[0]
@@ -42,6 +62,21 @@ def get_DistanceFromOD_data(image, centre):
 			k = k+1
 		i = i+1
 	return feature_5
+
+@jit
+def remove_bv_image(image,bv_image):
+	edge_result = image[:,:,0]				
+	i = 0
+	j = 0
+	while i < image.shape[0]:
+		j = 0
+		while j < image.shape[1]:
+			if edge_result[i,j] == 255 and bv_image[i,j] == 255:
+				edge_result[i,j] = 0
+			j = j+1
+		i = i+1
+	return edge_result
+
 
 def count_ones(image,value):
 	i = 0
@@ -219,7 +254,7 @@ def edge_pixel_image(image,bv_image):
 	newfin = cv2.dilate(edge_result, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3)), iterations=1)
 	return newfin
 
-def extract_bv(image):			
+def extract_bv(image):
 	clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
 	contrast_enhanced_green_fundus = clahe.apply(image)
 	# applying alternate sequential filtering (3 times closing opening)
@@ -311,10 +346,11 @@ if __name__ == "__main__":
 		clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
 		contrast_enhanced_fundus = clahe.apply(gray_scale)		
 		contrast_enhanced_green_fundus = clahe.apply(g)
+
 		average_intensity = get_average_intensity(contrast_enhanced_green_fundus)/255
 		average_hue = get_average_hue(h)/255
-		average_saturation = get_average_saturation(s)/255		
-		#entropy = calculate_entropy(contrast_enhanced_fundus)
+		average_saturation = get_average_saturation(s)/255	
+		
 		bv_image_dash = extract_bv(g)
 		bv_image = extract_bv(gray_scale)
 
@@ -323,23 +359,21 @@ if __name__ == "__main__":
 		edge_feature_output = edge_pixel_image(gray_scale,bv_image)		
 		newfin = cv2.dilate(edge_feature_output, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(5,5)), iterations=1)
 		edge_candidates = cv2.erode(newfin, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3)), iterations=1)		
-		edge_candidates = np.uint8(edge_candidates)
-
-		#fin_edge = cv2.bitwise_and(edge_candidates,entropy)		
-		#(cx2,cy2) = identify_OD(contrast_enhanced_green_fundus)		
-		# if float(math.sqrt(math.pow((cx-cx2),2)+math.pow((cy-cy2),2))) > 50:
-		# 	print(file_name_no_extension + "OD DETECTION IMPROVEMENT")
+		edge_candidates = np.uint8(edge_candidates)	
 															
 		label_image = cv2.imread(LabelFolder+'/'+file_name_no_extension+"_final_label.bmp")
-		#print(LabelFolder+'/'+file_name_no_extension+"_final_label.bmp")
+
+		deviation_matrix = deviation_from_mean(gray_scale)
 
 		feature1 = get_SD_data(var_fundus)/255
 		feature2 = get_HUE_data(h)/255
-		feature3 = get_saturation_data(s)/255		
+		feature3 = get_saturation_data(s)/255
 		feature4 = get_INTENSITY_data(contrast_enhanced_fundus)/255
 		feature5 = get_RED_data(r)/255
 		feature6 = get_GREEN_data(g)/255
-		#feature7 = get_DistanceFromOD_data(bv_image,(cx,cy))/(var_fundus.shape[0]+var_fundus.shape[1])
+		feature7 = get_DistanceFromOD_data(bv_image,coordinates_OD)/(var_fundus.shape[0]+var_fundus.shape[1])
+		feature8 = get_HUE_data(deviation_matrix)/255
+		print(feature8.shape,"deviation data shape")
 
 
 		Z = np.hstack((feature2,feature3))	#HUE and SATURATION
@@ -349,21 +383,20 @@ if __name__ == "__main__":
 		ret,label,center=cv2.kmeans(Z,6,None,criteria,50,cv2.KMEANS_RANDOM_CENTERS)	
 
 		u, indices, counts = np.unique(label, return_index=True, return_counts=True)	
-
-		#u, indices, counts = np.unique(label, return_index=True, return_counts=True)					
+		
 		center_t = [(t[0]*255,t[1]*255) for t in center]		
 		ex_color = (40,230)
 
 		distance = [(abs(t[0]- ex_color[0]),t) for t in center_t]								
 		index1 = distance.index((min(distance)))
-		if counts[distance.index((min(distance)))] > 0.35*gray_scale.shape[0]*gray_scale.shape[1]:
+		if counts[distance.index((min(distance)))] > 0.2*gray_scale.shape[0]*gray_scale.shape[1]:
 			index1 = -1		
 
 		distance2 = [(abs(t[0]- ex_color[0])+abs(t[1]-ex_color[1]),t) for t in center_t]		
 		index2 = -1		
 		if min(distance2)[0] <=25:
 			index2 = distance2.index((min(distance2)))		
-		if counts[distance2.index((min(distance2)))] > 0.3*gray_scale.shape[0]*gray_scale.shape[1]:
+		if counts[distance2.index((min(distance2)))] > 0.2*gray_scale.shape[0]*gray_scale.shape[1]:
 			index2 = -1
 
 		green = [0,255,0]
@@ -411,12 +444,17 @@ if __name__ == "__main__":
 		OD_loc = gray_scale.copy()
 		cv2.circle(OD_loc,coordinates_OD, 70, (0,0,0), -10)
 		cv2.imwrite(DestinationFolder+file_name_no_extension+"_OD_.bmp",OD_loc)
+
 		cl_res_dev = cv2.imread("/home/sherlock/Internship@iit/exudate-detection/training-result-kmeans-deviation/"+file_name_no_extension+"_final_candidates.bmp")
-		print("/home/sherlock/Internship@iit/exudate-detection/training-result-kmeans-deviation/"+file_name_no_extension+"_final_candidates.bmp")
-		final_candidates = np.bitwise_or(final_candidates,cl_res_dev[:,:,0])
-		cv2.circle(final_candidates,coordinates_OD, 70, (0,0,0), -10)		
+		cl_res_dev = remove_bv_image(cl_res_dev,bv_image_dash)
+		cv2.imwrite(DestinationFolder+file_name_no_extension+"removed_bv_from.bmp",cl_res_dev)
+		print("/home/sherlock/Internship@iit/exudate-detection/training-result-kmeans-deviation/"+file_name_no_extension+"_final_candidates.bmp")		
+		final_candidates = np.bitwise_or(final_candidates,cl_res_dev)
+				
+		cv2.circle(final_candidates,coordinates_OD, 70, (0,0,0), -10)
 		maskk = cv2.imread("MASK.bmp")
 		final_candidates = np.bitwise_and(final_candidates,maskk[:,:,0])
+		
 		final_candidates = final_candidates.astype('uint8')
 		final_candidates = cv2.dilate(final_candidates, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3)), iterations=1)		
 		cv2.imwrite(DestinationFolder+file_name_no_extension+"_final_candidates.bmp",final_candidates)
@@ -440,17 +478,10 @@ if __name__ == "__main__":
 					qq = qq + 1
 					temp = counter
 					this_image_rows = this_image_rows+1
-					filewriter.writerow([feature2[counter,0],feature3[counter,0],feature4[counter,0],feature5[counter,0],feature6[counter,0],average_intensity[counter,0],average_hue[counter,0],average_saturation[counter,0],int(label[counter,0])])
-					#filewriter.writerow([feature1[counter,0],feature2[counter,0],feature3[counter,0],int(label[counter,0])])					
+					filewriter.writerow([feature2[counter,0],feature3[counter,0],feature4[counter,0],feature5[counter,0],feature6[counter,0],feature7[counter,0],feature8[counter,0],average_intensity[counter,0],average_hue[counter,0],average_saturation[counter,0],int(label[counter,0])])
 				counter = counter + 1
-		
-		print(feature2[temp,0],feature3[temp,0],feature5[temp,0],feature6[temp,0],average_intensity[temp,0],average_hue[temp,0],int(label[temp,0]))
-		#print(feature1[temp,0],feature2[temp,0],feature3[temp,0],int(label[temp,0]))
+						
 		print("no of rows addded : ", this_image_rows)
-
 
 	print("no of pixxels in total", qq)
 	os.rename("training.csv","training.txt")
-	
-
-			
