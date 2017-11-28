@@ -1,9 +1,14 @@
 <img src="https://user-images.githubusercontent.com/16596327/30457494-28eefde8-99c5-11e7-96ce-19f713a9d989.jpg" align="right" />
 
+
+# The entire work has been described thoroughly in this paper (authored by me) 
+[Exudate Detection in Fundus Image : A Multispace Clustering Approach](https://github.com/getsanjeev/retinal-exudates-detection/files/1509920/Sanjeev.ICICCT.pdf)
+
 # Exudates Segmentation in Fundus Images
 
 > In this project, we apply Image morphology & Clustering to get candidates for exudates pixels. Finally a SVM classifier is applied
 to get segmentation results.
+
 
 
 ## Getting Started
@@ -28,7 +33,7 @@ For some image in DIARETDB1:
 
 <img src="https://user-images.githubusercontent.com/20872683/33320259-a3593314-d467-11e7-9128-f79bc680ef2f.png" width="400"> 
 
-Following resultant images are produced while segmentation process:
+Following resultant images are produced while segmentation process (different candidates for single profile of ):
 
 <img src="https://user-images.githubusercontent.com/20872683/33320310-d59dd640-d467-11e7-9ed4-0ff1e90f1927.png" width="400">
 <img src="https://user-images.githubusercontent.com/20872683/33319934-8623367e-d466-11e7-830e-0d2e79e8af89.jpg" width="400">
@@ -39,7 +44,7 @@ Following resultant images are produced while segmentation process:
 <img src="https://user-images.githubusercontent.com/20872683/33320375-05771052-d468-11e7-9ddb-3852f76f2b99.png" width="400">
 
 
-Final segmentation output : 
+# Final segmentation output : 
 
 
 
