@@ -30,19 +30,24 @@ For some image in DIARETDB1:
 
 Following resultant images are produced while segmentation process:
 
+<img src="https://user-images.githubusercontent.com/20872683/33320310-d59dd640-d467-11e7-9ed4-0ff1e90f1927.png" width="400">
 <img src="https://user-images.githubusercontent.com/20872683/33319934-8623367e-d466-11e7-830e-0d2e79e8af89.jpg" width="400">
+<img src="https://user-images.githubusercontent.com/20872683/33320329-e5cb7f2c-d467-11e7-958c-d0e50695e68e.png" width="400">
 <img src="https://user-images.githubusercontent.com/20872683/33320416-2f1f6ba2-d468-11e7-88f3-36c88aabd666.png" width="400">
 <img src="https://user-images.githubusercontent.com/20872683/33320502-7957f61c-d468-11e7-8d23-d95fbc287d06.png" width="400">
 
-<img src="https://user-images.githubusercontent.com/20872683/33320310-d59dd640-d467-11e7-9ed4-0ff1e90f1927.png" width="400">
-<img src="https://user-images.githubusercontent.com/20872683/33320329-e5cb7f2c-d467-11e7-958c-d0e50695e68e.png" width="400">
-
 <img src="https://user-images.githubusercontent.com/20872683/33320375-05771052-d468-11e7-9ddb-3852f76f2b99.png" width="400">
+
+
+Final segmentation output : 
+
+
 
 <img src="https://user-images.githubusercontent.com/20872683/33320549-a4925430-d468-11e7-9375-f1957ad85d5b.png" width="400">
 
 
 
+For any query Feel free to contact :
 
 * **[Sanjeev Dubey](https://github.com/getsanjeev)** - *getsanjeevdubey@gmail.com*
 
