@@ -1,7 +1,9 @@
 <img src="https://user-images.githubusercontent.com/16596327/30457494-28eefde8-99c5-11e7-96ce-19f713a9d989.jpg" align="right" />
 
 
-# The entire work has been described thoroughly in this paper (authored by me) 
+# Check this work (authored by me) 
+The entire project has been thoroughly explained in this paper.
+
 [Exudate Detection in Fundus Image : A Multispace Clustering Approach](https://github.com/getsanjeev/retinal-exudates-detection/files/1509920/Sanjeev.ICICCT.pdf)
 
 # Exudates Segmentation in Fundus Images
@@ -33,7 +35,7 @@ For some image in DIARETDB1:
 
 <img src="https://user-images.githubusercontent.com/20872683/33320259-a3593314-d467-11e7-9128-f79bc680ef2f.png" width="400"> 
 
-Following resultant images are produced while segmentation process (different candidates for single profile of ):
+Following resultant images are produced while segmentation process (different candidates for single profile of fundus):
 
 <img src="https://user-images.githubusercontent.com/20872683/33320310-d59dd640-d467-11e7-9ed4-0ff1e90f1927.png" width="400">
 <img src="https://user-images.githubusercontent.com/20872683/33319934-8623367e-d466-11e7-830e-0d2e79e8af89.jpg" width="400">
