@@ -35,8 +35,6 @@ wheels/
 *.csv
 *.giff
 *.gif
-*.bmp
-*.gif
 *.tif
 *.tiff
 # PyInstaller

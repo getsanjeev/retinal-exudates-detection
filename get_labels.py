@@ -42,7 +42,7 @@ if __name__ == "__main__":
 		os.mkdir(DestinationFolder)	
 
 	for file_name in filesArray1:
-		#print(pathFolder1+'/'+file_name)
+		
 		file_name_no_extension = os.path.splitext(file_name)[0]
 		print(file_name_no_extension)
 		fundus1 = cv2.imread(pathFolder1+'/'+file_name)
