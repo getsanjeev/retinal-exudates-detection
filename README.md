@@ -1,11 +1,6 @@
 <img src="https://user-images.githubusercontent.com/16596327/30457494-28eefde8-99c5-11e7-96ce-19f713a9d989.jpg" align="right" />
 
 
-# Check this work (authored by me) 
-The entire project has been thoroughly explained in this report.
-
-[Exudate Detection in Fundus Image : A Multispace Clustering Approach](https://github.com/getsanjeev/retinal-exudates-detection/files/1545220/Internship_report_IITD.pdf)
-
 # Exudates Segmentation in Fundus Images
 
 > In this project, we apply Image morphology & Clustering to get candidates for exudates pixels. Finally a SVM classifier is applied
